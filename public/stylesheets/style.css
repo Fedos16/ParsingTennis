@@ -1,0 +1,112 @@
+* {
+    padding: 0px;
+    margin: 0px;
+    font-size: 14px;
+}
+body {
+    background-color: #1D1B26;
+    color: rgba(255,255,255,.8);
+}
+.content {
+    width: 100%;
+    padding-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+.overflow_row {
+    width: auto;
+    height: 740px;
+    overflow: auto;
+    border: 1px solid white;
+    padding: 5px;
+    position: relative;
+}
+.row .column {
+    margin-left: 30px;
+}
+.row .column:first-child {
+    margin-left: 0px;
+}
+.row .column button, .column label {
+    text-decoration: none;
+    outline: none;
+    color: white;
+    display: inline-block;
+    position: relative;
+    padding: 15px 30px;
+    border: 1px solid;
+    border-image: linear-gradient(180deg, #ff3000, #ed0200, #ff096c, #d50082);
+    border-image-slice: 1;
+    margin: 10px 0px;   font-family: 'Montserrat', sans-serif;
+    text-transform: uppercase;
+    overflow: hidden;
+    letter-spacing: 2px;
+    transition: .8s cubic-bezier(.165,.84,.44,1);
+    background-color: transparent;
+}
+.row .column button:before, .column label:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 0;
+    width: 100%;
+    z-index: -1;
+    color: white;
+    background: linear-gradient(180deg, #ff3000, #ed0200, #ff096c, #d50082);
+    transition: .8s cubic-bezier(.165,.84,.44,1);
+}
+.row .column button:hover, .column label:hover {
+    background: rgba(255,255,255,0);
+}
+.row .column button:hover:before, .column label:hover:before {
+    bottom: 0%;
+    top: auto;
+    height: 100%;
+}
+
+#progress_bar {
+    font-size: 18px;
+}
+
+input[type="file"]{
+    display: none;
+}
+
+table {
+    overflow: hidden;
+    width: 1000px;
+    border-collapse: collapse;
+    border-spacing: 0px;
+}
+th, td {
+    padding: 18px 28px 18px; 
+    text-align: center; 
+}
+table thead th {
+    position: sticky;
+    top: 0px;
+    background: #a3202b;
+    font-size: 16px;
+    z-index: 1;
+}
+.scrollStyle::-webkit-scrollbar-track{
+    border: 1px solid transparent;
+	background-color: transparent;
+}
+.scrollStyle::-webkit-scrollbar{
+    background-color: #F5F5F5;
+    height: 6px;
+    width: 6px;
+}
+.scrollStyle::-webkit-scrollbar-thumb{
+	border-radius: 3px;
+	background-color: rgb(179, 9, 9);
+}
