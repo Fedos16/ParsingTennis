@@ -1,4 +1,3 @@
-import { data } from 'jquery';
 import {Parsing} from '../handlers/parsing'
 import {Processing_File} from '../handlers/processing_file';
 

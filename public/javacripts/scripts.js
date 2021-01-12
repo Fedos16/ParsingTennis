@@ -50,6 +50,16 @@ $(document).ready(async function(){
     .on('parsing_file_result', (data) => {
         setStatus(data.text + ` за ${(new Date() - start) / 1000} секунд.`, 'green');
         console.log(data);
+        setRows(data.data.data);
     })
+
+    function setRows(arr) {
+        let index = 1;
+        Object.keys(arr).map(name => {
+            let nums = arr[name].length;
+            $('table tbody').append(`<tr><td>${index}</td><td>${name}</td><td>${nums}</td></tr>`)
+            index ++;
+        })
+    }
 
 });
