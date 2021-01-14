@@ -12,7 +12,7 @@ export const PAGE_PUPPETEER_OPTS = {
     timeout: 3000000
 };
 
-export async function getPageContent(url) {
+export async function getPageContent(url, socket) {
     try {
 
         /**
@@ -41,8 +41,6 @@ export async function getPageContent(url) {
 
         await page.goto(url);
 
-        //await page.waitForNavigation();
-
         await page.waitForSelector('.b-menu__nav .c-nav__item');
         const kind_sport = await page.$('.b-menu__nav .c-nav__item:nth-child(7)');
         await kind_sport.click();
@@ -51,15 +49,37 @@ export async function getPageContent(url) {
 
         await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
 
-        //await page.screenshot({path: 'example.png'});
+        let now = new Date();
+        let now_day = now.getDate();
 
-        const content = await page.content();
+        let contents = [];
+
+        for (let i=1; i < now_day; i++) {
+            console.log(`День: ${i}`);
+            const calendar = await page.$('.c-filter_datepicker');
+            await calendar.click();
+            
+            const [day_calendar] = await page.$x(`//*[@class="vdp-datepicker__calendar"]/div/span[text()="${i}"]`);
+            await day_calendar.click();
+
+            await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
+
+            // Экономим около 3 секнд на каджой итерации
+            //await page.screenshot({path: `example_${i}.png`});
+
+            const content = await page.content();
+
+            contents.push({name: i, value: content});
+
+            socket.emit('parsing_result', {text: `Спарсили день №${i}. Выполнено`, data: null});
+            
+        }
         
         browser.close();
 
         console.log('Браузер закрыт');
 
-        return content;
+        return contents;
 
     } catch (e) {
         throw e

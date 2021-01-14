@@ -14,7 +14,7 @@ export default function (server, dir_path) {
 
         socket.on('start_parsing', async (data) => {
             console.log('Парсинг начинается');
-            let arr = await Parsing();
+            let arr = await Parsing(socket);
             socket.emit('parsing_result', {text: 'Что то парсили', data: arr});
         });
 
