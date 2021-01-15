@@ -50,7 +50,8 @@ $(document).ready(async function(){
     .on('parsing_file_result', (data) => {
         setStatus(data.text + ` за ${(new Date() - start) / 1000} секунд.`, 'green');
         console.log(data);
-        setRows(data.data.data);
+        //setRows(data.data.data);
+        setRows_v2(data.data.data);
     })
 
     function setRows(arr) {
@@ -81,7 +82,6 @@ $(document).ready(async function(){
                         val_all ++;
                         if (c1+c2 <= 18) {
                             val_true ++;
-                            console.log(`Алгоритм 2*9: ${score}`);
                         }
                     }
 
@@ -119,6 +119,49 @@ $(document).ready(async function(){
             }
 
             all_nums += nums;
+
+            let percent_9x2 = 0
+            if (all9x2 > 0) percent_9x2 = (true9x2 / all9x2 * 100).toFixed(2);
+
+            let style_9x2 = '';
+            if (percent_9x2 >= 53) {
+                all_all9x2 += all9x2;
+                all_true9x2 += true9x2;
+                style_9x2 = 'color: rgb(103, 153, 3);';
+            }
+
+            $('table tbody').append(`<tr><td>${index}</td><td>${name}</td><td>${nums}</td>
+                <td style="${style_9x2}">
+                    ${all9x2}(${true9x2}) - ${percent_9x2} %
+                </td>
+            </tr>`)
+            index ++;
+        })
+
+        let percent_9x2 = 0
+        if (all_all9x2 > 0) percent_9x2 = (all_true9x2 / all_all9x2 * 100).toFixed(2);
+
+        $('table tbody').prepend(`<tr style="background-color: rgb(103, 153, 3);"><td>${0}</td><td>ВСЕ ТУРНИРЫ</td><td>${all_nums}</td>
+            <td>
+                ${all_all9x2}(${all_true9x2}) - ${percent_9x2} %
+            </td>
+        </tr>`);
+    }
+    function setRows_v2(arr) {
+        $('table tbody').html('');
+
+        let index = 1;
+        let all_nums = 0;
+
+        let all_all9x2 = 0;
+        let all_true9x2 = 0;
+
+        Object.keys(arr).map(name => {
+            let nums = arr[name].nums;
+            all_nums += nums;
+
+            let all9x2 = arr[name].all_v;
+            let true9x2 = arr[name].true_v;
 
             let percent_9x2 = 0
             if (all9x2 > 0) percent_9x2 = (true9x2 / all9x2 * 100).toFixed(2);
