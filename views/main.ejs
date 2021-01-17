@@ -7,11 +7,21 @@
 </head>
 <body>
     <div class="content">
+        <header>
+            <div class="menu">
+                <ul>
+                    <a href="/bot"><li>Работа с Ботом</li></a>
+                    <li id="active_item_menu">Парсер статистики</li>
+                    <a href="/statistics"><li>Статистика</li></a>
+                </ul>
+            </div>
+        </header>
         <div class="row">
-            <div class="column"><button id="start_parsing">Спарсить день</button></div>
+            <div class="column"><button id="start_parsing">Спарсить статистику</button></div>
             <div class="column"><button id="parsing_file">Обработать файл</button></div>
         </div>
-        <div class="row"><div id="progress_bar">Ожидание действий пользователя</div></div>
+        <div class="row"><div id="progress_bar">Прогресс Бар</div></div>
+        <div class="row"><select id="Days" disabled><option value="Нет данных...">Нет данных...</option></select></div>
         <div class="row overflow_row scrollStyle">
             <table>
                 <thead>

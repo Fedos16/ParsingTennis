@@ -45,12 +45,16 @@ export async function Processing_File () {
 
             let $ = cherio.load(data_file);
 
+            name = String(name).replace('.html', '');
+
+            if (!(name in arrs)) arrs[name] = {};
+
             let blocks = $('.c-games.p-results__games > div > div.c-games__col');
             for (let i=0; i < blocks.length; i++) {
                 let nameComp = String($(blocks[i]).find('.c-games__row.c-games__row_can-toggle.active .c-games__name').text()).trim();
 
-                if (!(nameComp in arrs)) {
-                    arrs[nameComp] = {all_v: 0, true_v: 0, nums: 0};
+                if (!(nameComp in arrs[name])) {
+                    arrs[name][nameComp] = {all_v: 0, true_v: 0, nums: 0};
                 }
 
                 let cols = $(blocks[i]).find('.c-games__col');
@@ -78,9 +82,9 @@ export async function Processing_File () {
                     //arrs[nameComp].push({ name: peps, score: score_arr});
                 }
 
-                arrs[nameComp].all_v += all_v;
-                arrs[nameComp].true_v += true_v
-                arrs[nameComp].nums += cols.length;
+                arrs[name][nameComp].all_v += all_v;
+                arrs[name][nameComp].true_v += true_v
+                arrs[name][nameComp].nums += cols.length;
                 
             }
 

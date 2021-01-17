@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Бот</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+<body>
+    <div class="content">
+        <header>
+            <div class="menu">
+                <ul>
+                    <li id="active_item_menu">Работа с Ботом</li>
+                    <a href="/"><li>Парсер статистики</li></a>
+                    <a href="/statistics"><li>Статистика</li></a>
+                </ul>
+            </div>
+        </header>
+        <div class="row"><div class="progress_bar">Бот не запущен ...</div></div>
+        <div class="row">
+            <div class="column"><button id="start_bot">Запустить Бота</button></div>
+            <div class="column"><button id="stop_bot">Остановить Бота</button></div>
+        </div>
+    </div>
+    <script src="/javascripts/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/javacripts/scripts.js"></script>
+</body>
+</html>
