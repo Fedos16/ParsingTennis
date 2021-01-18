@@ -47,7 +47,11 @@ export async function getPageContent(url, socket) {
         const view_all_button = await page.$('.c-filters__item:nth-child(9) div div:nth-child(1)');
         await view_all_button.click();
 
-        await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
+        try {
+            await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
+        } catch (e) {
+            await page.screenshot({path: 'screen_' + new Date().getTime() + '.png'});
+        }
 
         let now = new Date();
         let now_day = now.getDate();
@@ -62,7 +66,11 @@ export async function getPageContent(url, socket) {
             const [day_calendar] = await page.$x(`//*[@class="vdp-datepicker__calendar"]/div/span[text()="${i}"]`);
             await day_calendar.click();
 
-            await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
+            try {
+                await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
+            } catch (e) {
+                await page.screenshot({path: 'screen_' + new Date().getTime() + '.png'});
+            }
 
             // Экономим около 3 секнд на каджой итерации
             //await page.screenshot({path: `example_${i}.png`});

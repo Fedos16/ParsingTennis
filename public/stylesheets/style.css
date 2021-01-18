@@ -146,3 +146,51 @@ table thead th {
 	border-radius: 3px;
     background-color: rgb(179, 9, 9);
 }
+
+.modal_block {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(31, 31, 31, 0.507);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+.modal_window {
+    margin-top: 100px;
+    width: 500px;
+    height: auto;
+    background-color: white;
+    border-radius: 10px;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.modal_window h3 {
+    margin-bottom: 20px;
+}
+.modal_window input {
+    width: 300px;
+    height: 40px;
+    border: 1px solid gray;
+    border-radius: 5px;
+    padding: 0px 10px;
+    text-align: center;
+    outline: none;
+    margin: 10px 0px;
+    font-size: 18px;
+}
+.modal_window button {
+    width: 150px;
+    height: 40px;
+    border-radius: 5px;
+    background-color: #2586cd;
+    border: none;
+    text-transform: uppercase;
+    color: white;
+    font-size: 16px;
+}

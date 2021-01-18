@@ -2,6 +2,8 @@ import {Parsing} from '../handlers/parsing'
 import {Processing_File} from '../handlers/processing_file';
 import {StartingBrowser, PAGE_PUPPETEER_OPTS} from '../handlers/bot';
 
+const fs = require('fs');
+
 export default function (server, dir_path) {
     let io = require('socket.io').listen(server);
     io.sockets.on('connection', (socket) => {
@@ -41,18 +43,39 @@ export default function (server, dir_path) {
             
             const login_text = '13016481';
             const password_text = '384467';
+            const tel_number = '90373464'
 
             await (await page.$('#auth_id_email')).type(login_text, {delay: 100});
             await (await page.$('#auth-form-password')).type(password_text, {delay: 40});
 
             await (await page.$('.auth-button')).click();
 
+            let status_autorization = false;
             try {
-                await page.waitForSelector('.top-b__account');
-                await page.screenshot({path: 'example.png'});
+                await page.waitForSelector('.top-b__account', {timeout: 10000});
+                status_autorization = true;
             } catch (e) {
-                await page.screenshot({path: 'example.png'});
+                console.log(' - Ресурс требует капчу');
             }
+
+            if (!status_autorization) {
+                await (await page.$('#phone_middle')).type(tel_number, {delay: 53});
+                await (await page.$('.block-window__btn')).click();
+
+                await page.waitFor(3000);
+                await (await page.$('button.swal2-confirm')).click();
+
+                socket.emit('captcha_code', {text: 'Введите код: '})
+
+                await page.waitFor(10000)
+            }
+
+            const page_data = await page.content();
+            fs.writeFileSync(`CAPCHA.html`, page_data);
+
+            await page.screenshot({path: 'screen.png'});
+
+
             obj.browser.close();
             console.log(` - Остановили Бота (${new Date() - start} ms)`);
             

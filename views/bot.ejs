@@ -22,6 +22,15 @@
             <div class="column"><button id="stop_bot">Остановить Бота</button></div>
         </div>
     </div>
+
+    <div class="modal_block" style="display: none;">
+        <div class="modal_window">
+            <h3>ВВОД КОДА ИЗ СМС</h3>
+            <input type="text" id="captcha_code" placeholder="Введите код">
+            <button id="send_code">Отправить</button>
+        </div>
+    </div>
+
     <script src="/javascripts/jquery.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/javacripts/scripts.js"></script>

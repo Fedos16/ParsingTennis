@@ -77,6 +77,9 @@ $(document).ready(async function(){
         $('.progress_bar').text(data.text);
         $('#start_bot').removeAttr('disabled');
     })
+    .on('captcha_code', async (data) => {
+        
+    })
 
     function addDataInSelect(days) {
         $('#Days').html('<option value="Все дни">Все дни</option>');
@@ -127,7 +130,7 @@ $(document).ready(async function(){
             if (percent_9x2 >= 53) {
                 all_all9x2 += all9x2;
                 all_true9x2 += true9x2;
-                style_9x2 = 'color: rgb(103, 153, 3);';
+                style_9x2 = 'color: rgb(103, 153, 3); font-weight: bold;';
             }
 
             return {nums, all9x2, true9x2, percent_9x2, style_9x2};
