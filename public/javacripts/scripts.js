@@ -39,6 +39,16 @@ $(document).ready(async function(){
 
         (day == 'Все дни') ? await setRows_v2(arr) : await setRows_v2(arr, day);
     })
+    $('#send_code').on('click', (e) => {
+        const code = $('#captcha_code').val();
+        if (!code) return;
+
+        $('.modal_block').hide();
+
+        $('.progress_bar').text('Отправили код, ждем ...');
+
+        socket.emit('send_code', { code });
+    })
 
     socket
     .on('open_connect', (msg) => {
@@ -73,12 +83,17 @@ $(document).ready(async function(){
 
         await setRows_v2(data.data.data);
     })
+    .on('bot_notification', async (data) => {
+        $('.progress_bar').text(data.text);
+    })
     .on('bot_stopped', async (data) => {
         $('.progress_bar').text(data.text);
         $('#start_bot').removeAttr('disabled');
     })
     .on('captcha_code', async (data) => {
-        
+        $('.modal_block').show();
+        $('#captcha_code').val('')
+        $('#captcha_code').focus();
     })
 
     function addDataInSelect(days) {

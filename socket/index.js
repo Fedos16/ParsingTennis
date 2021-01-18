@@ -1,11 +1,15 @@
 import {Parsing} from '../handlers/parsing'
 import {Processing_File} from '../handlers/processing_file';
-import {StartingBrowser, PAGE_PUPPETEER_OPTS} from '../handlers/bot';
+import {StartingBrowser, BotIsRunning} from '../handlers/bot';
 
 const fs = require('fs');
 
 export default function (server, dir_path) {
     let io = require('socket.io').listen(server);
+
+    let browser;
+    let page;
+
     io.sockets.on('connection', (socket) => {
         console.log('Пользователь подключен');
 
@@ -32,7 +36,8 @@ export default function (server, dir_path) {
             let start = new Date();
 
             let obj = await StartingBrowser();
-            const page = obj.page;
+            page = obj.page;
+            browser = obj.browser;
 
             const url = 'https://1xstavka.ru';
 
@@ -54,8 +59,10 @@ export default function (server, dir_path) {
             try {
                 await page.waitForSelector('.top-b__account', {timeout: 10000});
                 status_autorization = true;
+                socket.emit('bot_notification', {text: 'Капча не требуется'});
             } catch (e) {
                 console.log(' - Ресурс требует капчу');
+                socket.emit('bot_notification', {text: 'Ресурс требует пройти капчу'});
             }
 
             if (!status_autorization) {
@@ -65,22 +72,29 @@ export default function (server, dir_path) {
                 await page.waitFor(3000);
                 await (await page.$('button.swal2-confirm')).click();
 
-                socket.emit('captcha_code', {text: 'Введите код: '})
-
-                await page.waitFor(10000)
+                socket.emit('captcha_code', {text: 'Введите код: '});
+                return;
             }
 
-            const page_data = await page.content();
-            fs.writeFileSync(`CAPCHA.html`, page_data);
+            socket.emit('bot_notification', {text: 'Успешно авторизовались ...'});
 
-            await page.screenshot({path: 'screen.png'});
+            let cur_url = await BotIsRunning(page);
 
+            await page.waitFor(2000);
 
-            obj.browser.close();
+            browser.close();
             console.log(` - Остановили Бота (${new Date() - start} ms)`);
+
+            socket.emit('bot_notification', {text: 'Бот завершил работу'});
+        })
+        socket.on('send_code', async (data) => {
+            await (await page.$('#input_otp')).type(data.code, {delay: 30});
+            await (await page.$('.block-window__btn')).click();
+
+            await page.waitFor(5000);
+
             
 
-            socket.emit('bot_stopped', {text: 'Бот остановлен ...'});
-        })
+        });
     });
 }
