@@ -67,7 +67,6 @@ select {
     height: auto;
     max-height: 600px;
     overflow: auto;
-    border: 1px solid gray;
     padding: 5px;
     position: relative;
 }
@@ -108,7 +107,7 @@ button:disabled {
 .progress_bar {
     font-size: 16px;
     padding: 5px 30px;
-    width: 200px;
+    width: auto;
     border-bottom: 1px solid gray;
     text-align: center;
 }
@@ -119,17 +118,20 @@ table {
     border-collapse: collapse;
     border-spacing: 0px;
 }
+table tr {
+    border-bottom: 1px solid lightgray;
+}
 table tr:hover {
     background-color: rgba(255, 255, 255, 0.068);
 }
 th, td {
-    padding: 18px 28px 18px; 
+    padding: 5px 28px 5px;
     text-align: center; 
 }
 table thead th {
     position: sticky;
     top: 0px;
-    background: #a3202b;
+    background:rgba(211, 211, 211, 0.596);
     font-size: 16px;
     z-index: 1;
 }
@@ -193,4 +195,27 @@ table thead th {
     text-transform: uppercase;
     color: white;
     font-size: 16px;
+}
+
+.div_score {
+    display: flex;
+    flex-direction: column;
+}
+.score_row {
+    display: flex;
+}
+.score_all {
+    position: relative;
+    min-width: 30px;
+    font-weight: bold;
+    margin-right: 10px;
+    padding: 5px;
+    text-align: center;
+}
+.score_item {
+    position: relative;
+    padding: 5px;
+    min-width: 30px;
+    margin-right: 5px;
+    text-align: center;
 }

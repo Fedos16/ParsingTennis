@@ -40,53 +40,94 @@ export async function StartingBrowser() {
 }
 export async function BotIsRunning(page) {
 
-    const table_tennis_url = 'https://1xstavka.ru/live/Table-Tennis/';
+    try {
 
-    let current_url = page.url();
-    if (current_url != table_tennis_url) {
-        await page.goto(table_tennis_url);
-    }
+        const table_tennis_url = 'https://1xstavka.ru/live/Table-Tennis/';
 
-    await page.waitFor(2000);
-
-    let code_page = await page.content();
-
-    let $ = cherio.load(code_page);
-
-    let block = $('#games_content div div div div[data-name="dashboard-champ-content"]');
-    for (let i=0; i < block.length; i++) {
-        let name = $(block[i]).find('.c-events__name a').text();
-        console.log(` -- ${name}`);
-        let game_urls = $(block[i]).find('a.c-events__name');
-        let people = $(block[i]).find('a.c-events__name span.c-events__teams');
-
-        let scores = $(block[i]).find('.c-events-scoreboard__lines')
-        for (let x=0; x < game_urls.length; x++) {
-            let game_url = $(game_urls[x]).attr('href');
-            let person = $(people[x]).attr('title');
-            let text_score = '';
-
-            let score_line_one = $(scores[x]).find('.c-events-scoreboard__line:nth-child(1)');
-            let score_line_two = $(scores[x]).find('.c-events-scoreboard__line:nth-child(2)');
-
-            let elements_score_line_one = $(score_line_one).find('.c-events-scoreboard__cell');
-            let elements_score_line_two = $(score_line_two).find('.c-events-scoreboard__cell');
-            for (let y=0; y < elements_score_line_one.length; y ++) {
-                let t1 = $(elements_score_line_one[y]).text();
-                let t2 = $(elements_score_line_two[y]).text();
-                
-                if (y == 0) {
-                    text_score += `${t1} : ${t2}`;
-                } else {
-                    text_score += ` [${t1} - ${t2}]`;
-                }
-            }
-
-
-            console.log(` -- -- ${person} === (${text_score})`);
-            //console.log(` -- -- (${game_url})`);
+        let current_url = page.url();
+        if (current_url != table_tennis_url) {
+            await page.goto(table_tennis_url);
         }
-    }
 
-    return current_url;
+        await page.waitFor(2000);
+
+        let code_page = await page.content();
+
+        let $ = cherio.load(code_page);
+
+        let arr = {};
+
+        let start = new Date();
+
+        let block = $('#games_content div div div div[data-name="dashboard-champ-content"]');
+        for (let i=0; i < block.length; i++) {
+            let name = $(block[i]).find('.c-events__name a').text();
+            //console.log(` -- ${name}`);
+            let game_urls = $(block[i]).find('a.c-events__name');
+            let people = $(block[i]).find('a.c-events__name span.c-events__teams');
+
+            let scores = $(block[i]).find('.c-events-scoreboard__lines')
+            for (let x=0; x < game_urls.length; x++) {
+                let game_url = $(game_urls[x]).attr('href');
+                let person = $(people[x]).attr('title');
+                let arr_score = [];
+                let new_score = [];
+
+                let score_line_one = $(scores[x]).find('.c-events-scoreboard__line:nth-child(1)');
+                let score_line_two = $(scores[x]).find('.c-events-scoreboard__line:nth-child(2)');
+
+                let elements_score_line_one = $(score_line_one).find('.c-events-scoreboard__cell');
+                let elements_score_line_two = $(score_line_two).find('.c-events-scoreboard__cell');
+                for (let y=0; y < elements_score_line_one.length; y ++) {
+                    let t1 = $(elements_score_line_one[y]).text();
+                    let t2 = $(elements_score_line_two[y]).text();
+
+                    arr_score.push([t1, t2]);
+                    new_score.push([t1, t2]);
+                }
+
+                let status_stavka = false;
+
+                let num_parts = arr_score.length-1;
+                if (num_parts >= 2) {
+                    let f_part = arr_score[0];
+
+                    arr_score.splice(0, 1);
+                    arr_score = arr_score.reverse();
+
+                    let true_part = Number(f_part[0]) + Number(f_part[1]);
+
+                    if (arr_score.length > true_part) arr_score.splice(0, 1);
+
+                    if (true_part >= 2) {
+
+                        let n1_0 = Number(arr_score[0][0]);
+                        let n2_0 = Number(arr_score[0][1]);
+
+                        let n1_1 = Number(arr_score[1][0]);
+                        let n2_1 = Number(arr_score[1][1]);
+
+                        if (n1_0 + n2_0 >= 20 && n1_1 + n2_1 >= 20) {
+                            status_stavka = true;
+                        }
+                        
+                    }
+
+                }
+
+                (name in arr) ? arr[name].push({person, game_url, score: new_score, status_stavka}) : arr[name] = [{person, game_url, score: new_score, status_stavka}];
+            }
+        }
+
+        //console.log(` - Список игр получен за ${new Date() - start} ms`);
+
+        return arr;
+    } catch (e) {
+        await page.screenshot({path: 'screen_err_${new Date().getTime()}.png'});
+        throw e;
+    }
+}
+export async function TransferDataForClient(socket, arr) {
+    socket.emit('transfer_data_bot', {data: arr});
+    return true;
 }

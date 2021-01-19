@@ -28,8 +28,13 @@ $(document).ready(async function(){
     })
     $('#start_bot').on('click', (e) => {
         $(e.target).attr('disabled', true);
+        $('#stop_bot').removeAttr('disabled');
         $('.progress_bar').text('Запускаем ракету ...');
         socket.emit('bot_start', {text: 'start'});
+    })
+    $('#stop_bot').on('click', (e) => {
+        $(e.target).attr('disabled', true);
+        socket.emit('bot_stop', {text: 'stop'});
     })
     $(document).on('click', '#Days', async (e) => {
         let day = $(e.target).find('option:selected').val();
@@ -89,11 +94,16 @@ $(document).ready(async function(){
     .on('bot_stopped', async (data) => {
         $('.progress_bar').text(data.text);
         $('#start_bot').removeAttr('disabled');
+        $('#stop_bot').attr('disabled', true);
     })
     .on('captcha_code', async (data) => {
         $('.modal_block').show();
         $('#captcha_code').val('')
         $('#captcha_code').focus();
+    })
+    .on('transfer_data_bot', async (data) => {
+        let arr = data.data;
+        setRowsBotData(arr);
     })
 
     function addDataInSelect(days) {
@@ -185,6 +195,50 @@ $(document).ready(async function(){
                 ${all_all9x2}(${all_true9x2}) - ${percent_9x2} %
             </td>
         </tr>`);
+    }
+    async function setRowsBotData(arr) {
+        $('table tbody').text('');
+
+
+
+        Object.keys(arr).map(championat => {
+            let arrs = arr[championat];
+            $('table tbody').append(`<tr style="background-color: rgb(240, 240, 240);"><td colspan="2">${championat}</td></tr>`)
+
+            let code_nobet = '';
+            let code_bet = '';
+
+            for (let row of arrs) {
+                let scores = row.score;
+
+                let status_bet = row.status_stavka;
+
+                let l1 = '<div class="score_row">';
+                let l2 = '<div class="score_row">';
+                for (let i=0; i < scores.length; i++) {
+                    if (i==0) {
+                        l1 += `<div class="score_all">${scores[i][0]}</div>`;
+                        l2 += `<div class="score_all">${scores[i][1]}</div>`;
+                    } else {
+                        l1 += `<div class="score_item">${scores[i][0]}</div>`;
+                        l2 += `<div class="score_item">${scores[i][1]}</div>`;
+                    }
+                }
+                l1 += `</div>`;
+                l2 += `</div>`;
+
+                if (status_bet) {
+                    console.log(`СТАВКА: ${championat}`);
+                    console.log(row);
+                    code_bet += `<tr><td style="text-align: left;">${row.person}<b style="margin-left: 10px; font-weight: bold; color: rgb(0, 119, 255)">СТАВКА</b>
+                    </td><td><div class="div_score">${l1}${l2}</div></td></tr>`;
+                } else {
+                    code_nobet += `<tr><td style="text-align: left;">${row.person}</td><td><div class="div_score">${l1}${l2}</div></td></tr>`;
+                }
+            }
+
+            $('table tbody').append(`${code_bet}${code_nobet}`);
+        })
     }
 
 });
