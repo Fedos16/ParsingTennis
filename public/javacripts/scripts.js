@@ -1,5 +1,7 @@
 $(document).ready(async function(){
 
+    let ARRAY = {};
+
     var socket = io.connect();
 
     const setStatus = (text, style) => {
@@ -141,7 +143,7 @@ $(document).ready(async function(){
 
             return arr_names;
         }
-        function getDataForDay(array) {
+        function getDataForDay(array, name_ch) {
             let nums = array.nums;
             all_nums += nums;
 
@@ -151,12 +153,23 @@ $(document).ready(async function(){
             let percent_9x2 = 0
             if (all9x2 > 0) percent_9x2 = (true9x2 / all9x2 * 100).toFixed(2);
 
+            let champ = ARRAY.Championats;
+            let status_champ = true;
+            if (day_name) {
+                status_champ = false;
+                if (name_ch in champ) {
+                    if (champ[name_ch] >= 53) status_champ = true;
+                }
+            }
+
             let style_9x2 = '';
-            if (percent_9x2 >= 53) {
+            if (percent_9x2 >= 53 && status_champ) {
                 all_all9x2 += all9x2;
                 all_true9x2 += true9x2;
                 style_9x2 = 'color: rgb(103, 153, 3); font-weight: bold;';
             }
+
+
 
             return {nums, all9x2, true9x2, percent_9x2, style_9x2};
         }
@@ -179,13 +192,25 @@ $(document).ready(async function(){
 
         let datas = await setArrayForRead();
 
+        let true_champ = {};
+
         Object.keys(datas).map(name => {
-            let func = getDataForDay(datas[name]);
+            let func = getDataForDay(datas[name], name);
+
+            if (!day_name) {
+                if (func.percent_9x2 >= 53) {
+                    if (!(name in true_champ)) true_champ[name] = func.percent_9x2;
+                }
+            }
 
             addTableRow(func, name, index);
 
             index ++;
         });
+
+        if (!day_name) {
+            ARRAY.Championats = true_champ;
+        }
 
         let percent_9x2 = 0
         if (all_all9x2 > 0) percent_9x2 = (all_true9x2 / all_all9x2 * 100).toFixed(2);

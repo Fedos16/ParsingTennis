@@ -1,6 +1,8 @@
 const cherio = require('cheerio');
 const fs = require('fs');
 
+const models = require('.././models');
+
 export async function Processing_File () {
     try {
 
@@ -49,6 +51,8 @@ export async function Processing_File () {
 
             if (!(name in arrs)) arrs[name] = {};
 
+            
+
             let blocks = $('.c-games.p-results__games > div > div.c-games__col');
             for (let i=0; i < blocks.length; i++) {
                 let nameComp = String($(blocks[i]).find('.c-games__row.c-games__row_can-toggle.active .c-games__name').text()).trim();
@@ -82,13 +86,37 @@ export async function Processing_File () {
                     //arrs[nameComp].push({ name: peps, score: score_arr});
                 }
 
+                arrs_championats
+                if (nameComp in arrs_championats) {
+                    arrs_championats[nameComp].NumberGame += cols.length;
+                    arrs_championats[nameComp].A9x2.Number += all_v;
+                    arrs_championats[nameComp].A9x2.TrueNumber += true_v;
+
+                    let percent = 0;
+                    if (arrs_championats[nameComp].A9x2.Number > 0) percent = (arrs_championats[nameComp].A9x2.TrueNumber / arrs_championats[nameComp].A9x2.Number * 100).toFixed(2);
+                    arrs_championats[nameComp].A9x2.Percent = percent;
+                } else {
+
+                    let percent = 0;
+                    if (all_v > 0) percent = (true_v / all_v * 100).toFixed(2);
+
+                    arrs_championats[nameComp] = {
+                        NumberGame: cols.length,
+                        A9x2: {
+                            Number: all_v,
+                            TrueNumber: true_v,
+                            Percent: percent
+                        }
+                    }
+                }
+
                 arrs[name][nameComp].all_v += all_v;
                 arrs[name][nameComp].true_v += true_v
                 arrs[name][nameComp].nums += cols.length;
                 
             }
 
-            return arrs;
+            return {arrs, arrs_championats};
         }
 
         const folder = 'parsed_files/'
@@ -99,11 +127,23 @@ export async function Processing_File () {
         });
 
         let arrs = {};
+        let arrs_championats = {};
 
         for (let name of files) {
-            arrs = await readFileName(name);
+            let func = await readFileName(name);
+            arrs = func.arrs;
+            arrs_championats = func.arrs_championats;
         }
 
+        let db_arr = [];
+        Object.keys(arrs_championats).map(key => {
+            let obj = arrs_championats[key];
+            obj.Name = key;
+            db_arr.push(obj);
+        });
+
+        await models.Championats.remove();
+        await models.Championats.insertMany(db_arr);
 
         return {status: true, data: arrs}
     } catch (e) {
