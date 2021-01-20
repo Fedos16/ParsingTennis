@@ -65,6 +65,7 @@ export default function (server, dir_path) {
                 } catch (e) {
                     console.log(' - Ресурс требует капчу');
                     socket.emit('bot_notification', {text: 'Ресурс требует пройти капчу'});
+                    await page.screenshot({path: 'CAPTCHA.png'});
                 }
 
                 if (!status_autorization) {

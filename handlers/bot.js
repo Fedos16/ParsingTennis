@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer'
-
+const models = require('.././models');
 const cherio = require('cheerio');
 
 export const LAUNCH_PUPPETEER_OPTS = {
@@ -39,10 +39,57 @@ export async function StartingBrowser() {
     }
 }
 export async function BotIsRunning(page) {
-
     try {
 
+        async function getLiga() {
+            let db = await models.Championats.find({ "A9x2.Percent": {$gte: 55} }, {Name: 1});
+            let arr_names = {};
+            for (let row of db) {
+                arr_names[row] = true;
+            }
+            return arr_names;
+        }
+        async function Bet(params) {
+            let main_url = 'https://1xstavka.ru/';
+
+            let game_url = params.game_url;
+            let part = params.num_parts;
+
+            let url = main_url + game_url;
+
+            let bets = await models.Bets.find({});
+
+            if (bets.length > 0) return;
+
+            await page.goto(url);
+            
+            await page.waitFor(2000);
+            //await page.waitForSelector('.scoreboard-nav .multiselect__single', {timeout: 5000});
+
+            console.log(url);
+            console.log(Number(part));
+
+            await (await page.$('.scoreboard-nav .multiselect__single')).click();
+            await page.waitFor(300);
+            await (await page.$x(`//*[@class="scoreboard-nav__select"]//*[text()[contains(.,'${part}-я')]]/parent::span/parent::li`)).click();
+
+            await models.Bets.create({
+                Team: 'TEST',
+                PlayerOne: 'TEST',
+                PlayerTwo: 'TEST',
+                CurrentScore: 'TEST',
+                PartBet: 3,
+                Status: 'TEST'
+            });
+
+            await page.screenshot({path: 'bet.png'});
+
+            return;
+        }
+
         const table_tennis_url = 'https://1xstavka.ru/live/Table-Tennis/';
+
+        const true_bet_champ = await getLiga();
 
         let current_url = page.url();
         if (current_url != table_tennis_url) {
@@ -115,6 +162,17 @@ export async function BotIsRunning(page) {
 
                 }
 
+                if (status_stavka) {
+                    (name in true_bet_champ) ? status_stavka = true : status_stavka = false;
+                }
+
+                // Необходимо делать ставку
+                if (status_stavka) {
+                    await Bet({num_parts, game_url});
+                }
+
+                await Bet({num_parts, game_url});
+
                 (name in arr) ? arr[name].push({person, game_url, score: new_score, status_stavka}) : arr[name] = [{person, game_url, score: new_score, status_stavka}];
             }
         }
@@ -123,7 +181,7 @@ export async function BotIsRunning(page) {
 
         return arr;
     } catch (e) {
-        await page.screenshot({path: 'screen_err_${new Date().getTime()}.png'});
+        await page.screenshot({path: `screen_err_${new Date().getTime()}.png`});
         throw e;
     }
 }

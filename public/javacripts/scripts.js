@@ -158,12 +158,14 @@ $(document).ready(async function(){
             if (day_name) {
                 status_champ = false;
                 if (name_ch in champ) {
-                    if (champ[name_ch] >= 53) status_champ = true;
+                    if (champ[name_ch] >= 54) status_champ = true;
                 }
+            } else {
+                if (percent_9x2 < 54) status_champ = false;
             }
 
             let style_9x2 = '';
-            if (percent_9x2 >= 53 && status_champ) {
+            if (status_champ) {
                 all_all9x2 += all9x2;
                 all_true9x2 += true9x2;
                 style_9x2 = 'color: rgb(103, 153, 3); font-weight: bold;';
