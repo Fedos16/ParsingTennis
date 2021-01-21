@@ -3,6 +3,7 @@ const Schema = mongoose.Schema;
 
 const schema = new Schema(
     {
+        Championat: {type: String},
         Team: {type: String},
         PlayerOne: {type: String},
         PlayerTwo: {type: String},

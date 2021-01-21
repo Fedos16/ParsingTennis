@@ -77,8 +77,18 @@ $(document).ready(async function(){
         console.log(data);
     })
     .on('parsing_result', (data) => {
-        setStatus(data.text + ` за ${(new Date() - start) / 1000} секунд.`, 'green');
-        console.log(data);
+        let time = (new Date() - start) / 1000;
+        time = time / 60;
+        let num = Math.trunc(time)
+        let part = (time - num);
+
+
+        console.log(time);
+
+        (num > 0) ? time = `${num} мин. ${part * 60} сек.` : time = `${part * 60} сек.`;
+
+        setStatus(data.text + ` ${time}`, 'green');
+        //console.log(data);
     })
     .on('parsing_file_result', async (data) => {
         setStatus(data.text + ` за ${(new Date() - start) / 1000} секунд.`, 'green');

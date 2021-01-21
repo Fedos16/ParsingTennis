@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer'
+const fs = require('fs');
 
 export const LAUNCH_PUPPETEER_OPTS = {
     args: [
@@ -58,29 +59,69 @@ export async function getPageContent(url, socket) {
 
         let contents = [];
 
-        for (let i=1; i < now_day; i++) {
-            console.log(`День: ${i}`);
-            const calendar = await page.$('.c-filter_datepicker');
-            await calendar.click();
-            
-            const [day_calendar] = await page.$x(`//*[@class="vdp-datepicker__calendar"]/div/span[text()="${i}"]`);
-            await day_calendar.click();
+        let months = 2;
+        let start_date = new Date(now.getFullYear(), now.getMonth() - months, 1);
 
-            try {
-                await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
-            } catch (e) {
-                await page.screenshot({path: 'screen_' + new Date().getTime() + '.png'});
+        // Открываем календарь
+        await (await page.$('.c-filter_datepicker')).click();
+
+        let colDays = 0;
+        for (let m=0; m < months; m++) {
+            let curDate = new Date(start_date);
+            curDate.setMonth(curDate.getMonth()+1+m);
+            curDate.setDate(0);
+
+            colDays += curDate.getDate();
+
+            let [prev] = await page.$x('//*[@class="vdp-datepicker__calendar"][1]//*[@class="prev"]');
+            prev.click();
+        }
+
+        colDays += now_day - 1
+
+        for (let m=0; m < months; m++) {
+            let s = 1;
+            let curDate = new Date(start_date);
+            curDate.setMonth(curDate.getMonth()+1+m);
+            curDate.setDate(0);
+            let e = curDate.getDate()+1;
+            let month = curDate.getMonth();
+            let year = curDate.getFullYear();
+            if (month == new Date().getMonth() && year == new Date().getFullYear()) e = now_day;
+
+            for (let i = s; i < e; i++) {
+
+                await page.waitFor(200);
+
+                const [day_calendar] = await page.$x(`//*[@class="vdp-datepicker__calendar"]/div/span[text()="${i}"]`);
+                await day_calendar.click();
+
+                try {
+                    await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
+                } catch (e) {
+                    await page.screenshot({path: 'screen_' + new Date().getTime() + '.png'});
+                }
+
+                const content = await page.content();
+
+                let day = i;
+                if (day < 10) day = '0' + day;
+                month = curDate.getMonth() + 1;
+                if (month < 10) month = '0' + month;
+
+                let name_file = `${day}.${month}.${year}`;
+
+                fs.writeFileSync(`parsed_files/${name_file}.html`, content);
+
+                socket.emit('parsing_result', {text: `Спарсили день №${i} из ${colDays}. Время: `, data: null});
+
+                const calendar = await page.$('.c-filter_datepicker');
+                await calendar.click();
             }
 
-            // Экономим около 3 секнд на каджой итерации
-            //await page.screenshot({path: `example_${i}.png`});
+            let [next] = await page.$x('//*[@class="vdp-datepicker__calendar"][1]//*[@class="next"]');
+            next.click();
 
-            const content = await page.content();
-
-            contents.push({name: i, value: content});
-
-            socket.emit('parsing_result', {text: `Спарсили день №${i}. Выполнено`, data: null});
-            
         }
         
         browser.close();
@@ -90,6 +131,7 @@ export async function getPageContent(url, socket) {
         return contents;
 
     } catch (e) {
-        throw e
+        console.log(e)
+        throw e;
     }
 }
