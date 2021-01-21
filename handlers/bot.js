@@ -52,14 +52,17 @@ export async function BotIsRunning(page) {
         async function Bet(params) {
             let main_url = 'https://1xstavka.ru/';
 
+            let sum_bet = '20';
+
             let game_url = params.game_url;
             let part = params.num_parts;
+            let person = params.person;
 
             let url = main_url + game_url;
 
-            let bets = await models.Bets.find({});
+            let bets = await models.Bets.findOne({Team: person, PartBet: part});
 
-            if (bets.length > 0) return;
+            if (bets) return;
 
             await page.goto(url);
             
@@ -71,18 +74,35 @@ export async function BotIsRunning(page) {
 
             await (await page.$('.scoreboard-nav .multiselect__single')).click();
             await page.waitFor(300);
-            await (await page.$x(`//*[@class="scoreboard-nav__select"]//*[text()[contains(.,'${part}-я')]]/parent::span/parent::li`)).click();
+            const [part_element] = await page.$x(`//*[@class="scoreboard-nav__select"]//*[text()[contains(.,'${part}-я')]]/parent::span/parent::li`)
+            await part_element.click();
+
+            await page.waitFor(500);
+
+            const [bet_element] = await page.$x(`//*[@class="bet_group"]//*[text()[contains(.,'18.5 М')]]/parent::div`);
+
+            if (!bet_element) return;
+
+            await bet_element.click()
+
+            await page.waitFor(200)
+
+            await (await page.$('.bet_sum_input')).type(sum_bet, {delay: 100});
+
+            await (await page.$('.coupon-btn-group__item button')).click();
 
             await models.Bets.create({
-                Team: 'TEST',
+                Team: person,
                 PlayerOne: 'TEST',
                 PlayerTwo: 'TEST',
                 CurrentScore: 'TEST',
-                PartBet: 3,
+                PartBet: part,
                 Status: 'TEST'
             });
 
-            await page.screenshot({path: 'bet.png'});
+            await page.waitFor(5000);
+
+            await page.screenshot({path: `${person} - ${part}.png`});
 
             return;
         }
@@ -135,6 +155,8 @@ export async function BotIsRunning(page) {
 
                 let status_stavka = false;
 
+                let status_test = false;
+
                 let num_parts = arr_score.length-1;
                 if (num_parts >= 2) {
                     let f_part = arr_score[0];
@@ -144,7 +166,16 @@ export async function BotIsRunning(page) {
 
                     let true_part = Number(f_part[0]) + Number(f_part[1]);
 
-                    if (arr_score.length > true_part) arr_score.splice(0, 1);
+                    let arr_score_current = [];
+                    if (arr_score.length > true_part) {
+                        arr_score_current = arr_score.splice(0, 1);
+
+                        // Тестирование создание ставки
+                        let c1_0 = Number(arr_score_current[0][0]);
+                        let c2_0 = Number(arr_score_current[0][1]);
+
+                        if (c1_0 + c2_0 < 9) status_test = true;
+                    }
 
                     if (true_part >= 2) {
 
@@ -154,7 +185,15 @@ export async function BotIsRunning(page) {
                         let n1_1 = Number(arr_score[1][0]);
                         let n2_1 = Number(arr_score[1][1]);
 
-                        if (n1_0 + n2_0 >= 20 && n1_1 + n2_1 >= 20) {
+                        let c1_0 = 10
+                        let c2_0 = 10
+
+                        if (arr_score_current.length > 0) {
+                            c1_0 = Number(arr_score_current[0][0]);
+                            c2_0 = Number(arr_score_current[0][1]);
+                        }
+
+                        if (n1_0 + n2_0 >= 20 && n1_1 + n2_1 >= 20 && c1_0 + c2_0 < 9) {
                             status_stavka = true;
                         }
                         
@@ -168,10 +207,10 @@ export async function BotIsRunning(page) {
 
                 // Необходимо делать ставку
                 if (status_stavka) {
-                    await Bet({num_parts, game_url});
+                    await Bet({num_parts, game_url, person});
                 }
 
-                await Bet({num_parts, game_url});
+                //if (status_test) await Bet({num_parts, game_url, person});
 
                 (name in arr) ? arr[name].push({person, game_url, score: new_score, status_stavka}) : arr[name] = [{person, game_url, score: new_score, status_stavka}];
             }
@@ -182,7 +221,8 @@ export async function BotIsRunning(page) {
         return arr;
     } catch (e) {
         await page.screenshot({path: `screen_err_${new Date().getTime()}.png`});
-        throw e;
+        console.log(e);
+        return {};
     }
 }
 export async function TransferDataForClient(socket, arr) {
