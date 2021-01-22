@@ -42,10 +42,10 @@ export async function BotIsRunning(page) {
     try {
 
         async function getLiga() {
-            let db = await models.Championats.find({ "A9x2.Percent": {$gte: 55} }, {Name: 1});
+            let db = await models.Championats.find({ "A9x2.Percent": {$gte: 54} }, {Name: 1});
             let arr_names = {};
             for (let row of db) {
-                arr_names[row] = true;
+                arr_names[row.Name] = true;
             }
             return arr_names;
         }

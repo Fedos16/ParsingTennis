@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer'
+const fs = require('fs');
 
 export const LAUNCH_PUPPETEER_OPTS = {
     args: [
@@ -14,15 +15,6 @@ export const PAGE_PUPPETEER_OPTS = {
 
 export async function getPageContent(url, socket) {
     try {
-
-        /**
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--disable-gpu'
-         */
-        /* `--proxy-server=${proxy.ip}:${proxy.port}` */
         const browser = await puppeteer.launch({
             headless: true,
             args : [
@@ -60,6 +52,7 @@ export async function getPageContent(url, socket) {
 
         for (let i=1; i < now_day; i++) {
             console.log(`День: ${i}`);
+            socket.emit('parsing_result', {text: `Начинаем парсить день №${i}. Выполнено`, data: null});
             const calendar = await page.$('.c-filter_datepicker');
             await calendar.click();
             
@@ -72,14 +65,21 @@ export async function getPageContent(url, socket) {
                 await page.screenshot({path: 'screen_' + new Date().getTime() + '.png'});
             }
 
-            // Экономим около 3 секнд на каджой итерации
-            //await page.screenshot({path: `example_${i}.png`});
-
             const content = await page.content();
 
-            contents.push({name: i, value: content});
-
             socket.emit('parsing_result', {text: `Спарсили день №${i}. Выполнено`, data: null});
+
+            let day = i;
+            if (day < 10) day = '0' + day;
+            let month = now.getMonth()+1;
+            if (month < 10) month = '0' + month;
+            let year = now.getFullYear();
+
+            let name_file = `${day}.${month}.${year}`;
+
+            fs.writeFileSync(`parsed_files/${name_file}.html`, content);
+
+            socket.emit('parsing_result', {text: `Записали в файл день №${i}. Выполнено`, data: null});
             
         }
         
