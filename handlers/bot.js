@@ -57,6 +57,7 @@ export async function BotIsRunning(page) {
             let game_url = params.game_url;
             let part = params.num_parts;
             let person = params.person;
+            let name_championat = params.name;
 
             let url = main_url + game_url;
 
@@ -92,6 +93,7 @@ export async function BotIsRunning(page) {
             await (await page.$('.coupon-btn-group__item button')).click();
 
             await models.Bets.create({
+                Championat: name_championat,
                 Team: person,
                 PlayerOne: 'TEST',
                 PlayerTwo: 'TEST',
@@ -207,7 +209,7 @@ export async function BotIsRunning(page) {
 
                 // Необходимо делать ставку
                 if (status_stavka) {
-                    await Bet({num_parts, game_url, person});
+                    await Bet({num_parts, game_url, person, name});
                 }
 
                 //if (status_test) await Bet({num_parts, game_url, person});

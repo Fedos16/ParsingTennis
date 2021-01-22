@@ -1,8 +1,6 @@
 import {getPageContent} from '../helpers/puppeteer'
 import {NameFile} from '../helpers/name_file'
 
-const fs = require('fs');
-
 const URL = 'https://1xstavka.ru/results/';
 
 export async function Parsing (socket) {

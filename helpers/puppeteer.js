@@ -50,12 +50,39 @@ export async function getPageContent(url, socket) {
 
         let contents = [];
 
-        for (let i=1; i < now_day; i++) {
-            console.log(`День: ${i}`);
-            socket.emit('parsing_result', {text: `Начинаем парсить день №${i}. Выполнено`, data: null});
-            const calendar = await page.$('.c-filter_datepicker');
-            await calendar.click();
-            
+        let months = 0;
+        let start_date = new Date(now.getFullYear(), now.getMonth() - months, 1);
+
+        // Открываем календарь
+        await (await page.$('.c-filter_datepicker')).click();
+
+        let colDays = 0;
+        for (let m=0; m < months; m++) {
+            let curDate = new Date(start_date);
+            curDate.setMonth(curDate.getMonth()+1+m);
+            curDate.setDate(0);
+
+            colDays += curDate.getDate();
+
+            let [prev] = await page.$x('//*[@class="vdp-datepicker__calendar"][1]//*[@class="prev"]');
+            prev.click();
+        }
+
+        colDays += now_day - 1
+
+        let s = 1;
+        let curDate = new Date(start_date);
+        curDate.setMonth(curDate.getMonth()+1);
+        curDate.setDate(0);
+        let e = curDate.getDate()+1;
+        let month = curDate.getMonth();
+        let year = curDate.getFullYear();
+        if (month == new Date().getMonth() && year == new Date().getFullYear()) e = now_day;
+
+        for (let i = s; i < e; i++) {
+
+            await page.waitFor(200);
+
             const [day_calendar] = await page.$x(`//*[@class="vdp-datepicker__calendar"]/div/span[text()="${i}"]`);
             await day_calendar.click();
 
@@ -67,20 +94,19 @@ export async function getPageContent(url, socket) {
 
             const content = await page.content();
 
-            socket.emit('parsing_result', {text: `Спарсили день №${i}. Выполнено`, data: null});
-
             let day = i;
             if (day < 10) day = '0' + day;
-            let month = now.getMonth()+1;
+            month = curDate.getMonth() + 1;
             if (month < 10) month = '0' + month;
-            let year = now.getFullYear();
 
             let name_file = `${day}.${month}.${year}`;
 
             fs.writeFileSync(`parsed_files/${name_file}.html`, content);
 
-            socket.emit('parsing_result', {text: `Записали в файл день №${i}. Выполнено`, data: null});
-            
+            socket.emit('parsing_result', {text: `Спарсили день №${i} из ${e}. Время: `, data: null});
+
+            const calendar = await page.$('.c-filter_datepicker');
+            await calendar.click();
         }
         
         browser.close();
@@ -90,6 +116,7 @@ export async function getPageContent(url, socket) {
         return contents;
 
     } catch (e) {
-        throw e
+        console.log(e)
+        throw e;
     }
 }

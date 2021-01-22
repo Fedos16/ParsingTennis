@@ -51,7 +51,7 @@ export async function Processing_File () {
 
             if (!(name in arrs)) arrs[name] = {};
 
-            
+            let arr_db = [];
 
             let blocks = $('.c-games.p-results__games > div > div.c-games__col');
             for (let i=0; i < blocks.length; i++) {
@@ -67,6 +67,14 @@ export async function Processing_File () {
                 let true_v = 0;
 
                 for (let x=0; x < cols.length; x++) {
+                    let dates = String($(cols[x]).find('.c-games__date').text()).trim();
+
+                    let arr_dates = dates.split(' ');
+                    let date_part = name.split('.');
+                    let time_part = arr_dates[1].split(':');
+
+                    let date = new Date(date_part[2], date_part[1], date_part[0], time_part[0], time_part[1]);
+
                     let peps = String($(cols[x]).find('.c-games__opponents.u-dir-ltr').text()).trim()
                     let scores = $(cols[x]).find('.c-games__results.u-mla.u-tar');
 
@@ -80,6 +88,27 @@ export async function Processing_File () {
 
                         all_v += f_getData20x2.val_all;
                         true_v += f_getData20x2.val_true;
+
+                        let arr_score = score.replace(/\(|\)/g, '').split(' ');
+                        let main_score = arr_score[0];
+                        let dop_text = String(arr_score[1]).split(',');
+                        let arr_sc = []
+                        for (let row of dop_text) {
+                            arr_sc.push(row.split(':'));
+                        }
+
+                        let peps_arr = String(peps).split(' - ');
+
+                        arr_db.push({
+                            Championat: nameComp,
+                            HomePerson: peps_arr[0],
+                            GuestPerson: peps_arr[1],
+                            Score: {
+                                Main: main_score,
+                                More: arr_sc
+                            },
+                            DateGame: date
+                        });
 
                     }
 
@@ -115,6 +144,8 @@ export async function Processing_File () {
                 arrs[name][nameComp].nums += cols.length;
                 
             }
+
+            await models.Games.insertMany(arr_db);
 
             return {arrs, arrs_championats};
         }
