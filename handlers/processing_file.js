@@ -145,7 +145,7 @@ export async function Processing_File () {
                 
             }
 
-            await models.Games.insertMany(arr_db);
+            //await models.Games.insertMany(arr_db);
 
             return {arrs, arrs_championats};
         }
