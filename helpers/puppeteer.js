@@ -25,7 +25,7 @@ export async function getPageContent(url, socket) {
          */
         /* `--proxy-server=${proxy.ip}:${proxy.port}` */
         const browser = await puppeteer.launch({
-            headless: true,
+            headless: false,
             args : [
                 '--window-size=1920,1080',
                 '--no-sandbox',
@@ -59,7 +59,7 @@ export async function getPageContent(url, socket) {
 
         let contents = [];
 
-        let months = 2;
+        let months = 0;
         let start_date = new Date(now.getFullYear(), now.getMonth() - months, 1);
 
         // Открываем календарь
