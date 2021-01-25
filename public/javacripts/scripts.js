@@ -63,6 +63,7 @@ $(document).ready(async function(){
     })
     .on('connect', () => {
         $('.status_server').text('Онлайн');
+        socket.emit('get_status_bot', {text: 'true_false'});
         //setStatus('Соединение с сервером установлено', 'green');
     })
     .on('disconnect', () => {
@@ -102,6 +103,17 @@ $(document).ready(async function(){
     })
     .on('bot_notification', async (data) => {
         $('.progress_bar').text(data.text);
+        if ('status_bot' in data) {
+            let status_bot = data.status_bot;
+            if (status_bot) {
+                $('#start_bot').attr('disabled', true);
+                $('#stop_bot').removeAttr('disabled');
+            } else {
+                $('#start_bot').removeAttr('disabled');
+                $('#stop_bot').attr('disabled', true);
+                $('table tbody').text('');
+            }
+        }
     })
     .on('bot_stopped', async (data) => {
         $('.progress_bar').text(data.text);

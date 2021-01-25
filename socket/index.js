@@ -10,6 +10,20 @@ export default function (server, dir_path) {
     let browser;
     let page;
     let status_bot = true;
+    let status_job_bot = false;
+
+    async function BotJob(page) {
+        status_job_bot = true;
+        while (status_bot) {
+            io.sockets.emit('bot_notification', {text: 'Начинаем получать данные ...'});
+            let arr = await BotIsRunning(page);
+            if (arr) {
+                await TransferDataForClient(io, arr);
+                io.sockets.emit('bot_notification', {text: 'Данные получены ...', status_bot: status_job_bot});
+            }
+            await page.waitFor(2000);
+        }
+    }
 
     io.sockets.on('connection', (socket) => {
         console.log('Пользователь подключен');
@@ -35,6 +49,8 @@ export default function (server, dir_path) {
             });
             socket.on('bot_start', async (data) => {
                 console.log(` - Запускаем Бота`);
+
+                io.sockets.emit('bot_notification', {text: 'Запускаем ракету', status_bot: true});
 
                 let start = new Date();
 
@@ -80,46 +96,45 @@ export default function (server, dir_path) {
                     return;
                 }
 
-                socket.emit('bot_notification', {text: 'Успешно авторизовались ...'});
+                io.sockets.emit('bot_notification', {text: 'Успешно авторизовались ...'});
 
+                console.log(' - Бот работает');
+                await BotJob(page);
 
-                while (status_bot) {
-                    socket.emit('bot_notification', {text: 'Начинаем получать данные ...'});
-                    let arr = await BotIsRunning(page);
-                    if (arr) {
-                        await TransferDataForClient(socket, arr);
-                        socket.emit('bot_notification', {text: 'Данные получены ...'});
-                    }
-                    await page.waitFor(2000);
-                }
+                status_job_bot = false;
 
                 browser.close();
-                socket.emit('bot_stopped', {text: 'Бот завершил работу'});
+                io.sockets.emit('bot_stopped', {text: 'Бот завершил работу'});
+
+                console.log(' - Бот выключен');
             
             })
             socket.on('send_code', async (data) => {
+
+                io.sockets.emit('bot_notification', {text: 'Решаем капчу', status_bot: true});
+
                 await (await page.$('#input_otp')).type(data.code, {delay: 30});
                 await (await page.$('.block-window__btn')).click();
 
                 await page.waitFor(5000);
 
-                while (status_bot) {
-                    socket.emit('bot_notification', {text: 'Начинаем получать данные ...'});
-                    let arr = await BotIsRunning(page);
-                    if (arr) {
-                        await TransferDataForClient(socket, arr);
-                        socket.emit('bot_notification', {text: 'Данные получены ...'});
-                    }
-                    await page.waitFor(2000);
-                }
+                await BotJob(page);
+
+                status_job_bot = false;
 
                 browser.close();
-                socket.emit('bot_stopped', {text: 'Бот завершил работу'});
+                io.sockets.emit('bot_stopped', {text: 'Бот завершил работу'});
 
             });
             socket.on('bot_stop', async (data) => {
                 status_bot = false;
-                socket.emit('bot_notification', {text: 'Отправлена команда остановки работы бота, ожидаем...'});
+                status_job_bot = false;
+                io.sockets.emit('bot_notification', {text: 'Отправлена команда остановки работы бота, ожидаем...'});
+            });
+            socket.on('get_status_bot', async (data) => {
+                let text = 'Бот работает ...';
+                if (!status_job_bot) text = 'Бот отдыхает ...'
+                io.sockets.emit('bot_notification', {text, status_bot: status_job_bot});
             })
 
         } catch (e) {

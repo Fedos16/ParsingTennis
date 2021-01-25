@@ -18,7 +18,7 @@ const options = {
   keepAlive: true,
   reconnectTries: 30000
 }
-mongoose.set('debug', config.IS_PRODUCTION);
+mongoose.set('debug', !config.IS_PRODUCTION);
 mongoose.connection
   .on('error', error => console.log(error))
   .on('close', () => console.log('Database connection closed.'))

@@ -133,7 +133,7 @@ export async function BotIsRunning(page) {
             });
 
             console.log(` - Ставка сделана и сохранена: ${currentDateTime()}`);
-            await page.screenshot({path: `Ставка сделана и сохранена ${currentDateTime()}.png`})
+            //await page.screenshot({path: `Ставка сделана и сохранена ${currentDateTime()}.png`})
 
             await page.waitFor(5000);
 
@@ -258,7 +258,7 @@ export async function BotIsRunning(page) {
         return {};
     }
 }
-export async function TransferDataForClient(socket, arr) {
-    socket.emit('transfer_data_bot', {data: arr});
+export async function TransferDataForClient(io, arr) {
+    io.sockets.emit('transfer_data_bot', {data: arr});
     return true;
 }
