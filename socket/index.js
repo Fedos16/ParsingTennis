@@ -1,5 +1,5 @@
 import {Parsing} from '../handlers/parsing'
-import {Processing_File} from '../handlers/processing_file';
+import {Processing_File, ProcessingDB} from '../handlers/processing_file';
 import {StartingBrowser, BotIsRunning, TransferDataForClient} from '../handlers/bot';
 
 const fs = require('fs');
@@ -30,6 +30,7 @@ export default function (server, dir_path) {
             socket.on('parsing_file', async (data) => {
                 console.log(' - Начинаем обработку файла ...');
                 let arr = await Processing_File();
+                //let arr = await ProcessingDB();
                 socket.emit('parsing_file_result', {text: 'Файл обработан', data: arr});
             });
             socket.on('bot_start', async (data) => {

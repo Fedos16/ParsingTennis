@@ -42,14 +42,30 @@ export async function BotIsRunning(page) {
     try {
 
         async function getLiga() {
-            let db = await models.Championats.find({ "A9x2.Percent": {$gte: 55} }, {Name: 1});
+            let db = await models.Championats.find({ "A9x2.Percent": {$gte: 53.6} }, {Name: 1});
             let arr_names = {};
             for (let row of db) {
-                arr_names[row] = true;
+                arr_names[row.Name] = true;
             }
             return arr_names;
         }
         async function Bet(params) {
+
+            function currentDateTime() {
+                let now = new Date();
+                let day = now.getDate();
+                if (day < 10) day = '0'+day;
+                let month = now.getMonth() + 1;
+                if (month < 10) month = '0'+month;
+
+                let h = now.getHours();
+                if (h < 10) h = '0'+h;
+                let m = now.getMinutes();
+                if (m < 10) m = '0'+m
+
+                return `${day}-${month} ${h} ${m}`;
+            }
+
             let main_url = 'https://1xstavka.ru/';
 
             let sum_bet = '20';
@@ -58,6 +74,7 @@ export async function BotIsRunning(page) {
             let part = params.num_parts;
             let person = params.person;
             let name_championat = params.name;
+            let new_score = params.new_score;
 
             let url = main_url + game_url;
 
@@ -68,10 +85,9 @@ export async function BotIsRunning(page) {
             await page.goto(url);
             
             await page.waitFor(2000);
-            //await page.waitForSelector('.scoreboard-nav .multiselect__single', {timeout: 5000});
 
-            console.log(url);
-            console.log(Number(part));
+            const el_in_kupon = await page.$('.c-bet-box--blocked button');
+            if (el_in_kupon) await el_in_kupon.click();
 
             await (await page.$('.scoreboard-nav .multiselect__single')).click();
             await page.waitFor(300);
@@ -82,7 +98,20 @@ export async function BotIsRunning(page) {
 
             const [bet_element] = await page.$x(`//*[@class="bet_group"]//*[text()[contains(.,'18.5 М')]]/parent::div`);
 
-            if (!bet_element) return;
+            if (!bet_element) {
+                console.log(` - Не найден нужный элемент для ставки`);
+                return;
+            }
+
+            let kef_element = await bet_element.$('.koeff i')
+            let kef_value = await page.evaluate(el => el.textContent, kef_element);
+
+            // Получаем игрока 1 и игрока 2
+            let person_arr = String(person).split(' — ');
+            let person_one_arr = person_arr[0].split(' ');
+            let person_one = person_one_arr[0] + ' ' + person_one_arr[1];
+            let person_two_arr = person_arr[1].split(' ');
+            let person_two = person_two_arr[0] + ' ' + person_two_arr[1];
 
             await bet_element.click()
 
@@ -95,16 +124,18 @@ export async function BotIsRunning(page) {
             await models.Bets.create({
                 Championat: name_championat,
                 Team: person,
-                PlayerOne: 'TEST',
-                PlayerTwo: 'TEST',
-                CurrentScore: 'TEST',
+                PlayerOne: person_one,
+                PlayerTwo: person_two,
+                CurrentScore: new_score,
                 PartBet: part,
-                Status: 'TEST'
+                Kef: kef_value,
+                Status: 'В игре'
             });
 
-            await page.waitFor(5000);
+            console.log(` - Ставка сделана и сохранена: ${currentDateTime()}`);
+            await page.screenshot({path: `Ставка сделана и сохранена ${currentDateTime()}.png`})
 
-            await page.screenshot({path: `${person} - ${part}.png`});
+            await page.waitFor(5000);
 
             return;
         }
@@ -209,7 +240,7 @@ export async function BotIsRunning(page) {
 
                 // Необходимо делать ставку
                 if (status_stavka) {
-                    await Bet({num_parts, game_url, person, name});
+                    await Bet({num_parts, game_url, person, name, new_score});
                 }
 
                 //if (status_test) await Bet({num_parts, game_url, person});

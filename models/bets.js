@@ -7,8 +7,9 @@ const schema = new Schema(
         Team: {type: String},
         PlayerOne: {type: String},
         PlayerTwo: {type: String},
-        CurrentScore: {type: String},
+        CurrentScore: {type: Array},
         PartBet: {type: Number},
+        Kef: {type: Number},
         Status: {type: String}
     },
     {

@@ -9,7 +9,7 @@ export async function Parsing (socket) {
 
         socket.emit('parsing_result', {text: 'Подготавливаем браузер. Выполнено', data: null});
 
-        // Парсим данные
+        // Парсинг данных
         await getPageContent(URL, socket);
         
         return {status: true, data: null};

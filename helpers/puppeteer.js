@@ -15,17 +15,8 @@ export const PAGE_PUPPETEER_OPTS = {
 
 export async function getPageContent(url, socket) {
     try {
-
-        /**
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--disable-gpu'
-         */
-        /* `--proxy-server=${proxy.ip}:${proxy.port}` */
         const browser = await puppeteer.launch({
-            headless: false,
+            headless: true,
             args : [
                 '--window-size=1920,1080',
                 '--no-sandbox',
@@ -79,49 +70,43 @@ export async function getPageContent(url, socket) {
 
         colDays += now_day - 1
 
-        for (let m=0; m < months; m++) {
-            let s = 1;
-            let curDate = new Date(start_date);
-            curDate.setMonth(curDate.getMonth()+1+m);
-            curDate.setDate(0);
-            let e = curDate.getDate()+1;
-            let month = curDate.getMonth();
-            let year = curDate.getFullYear();
-            if (month == new Date().getMonth() && year == new Date().getFullYear()) e = now_day;
+        let s = 1;
+        let curDate = new Date(start_date);
+        curDate.setMonth(curDate.getMonth()+1);
+        curDate.setDate(0);
+        let e = curDate.getDate()+1;
+        let month = curDate.getMonth();
+        let year = curDate.getFullYear();
+        if (month == new Date().getMonth() && year == new Date().getFullYear()) e = now_day;
 
-            for (let i = s; i < e; i++) {
+        for (let i = s; i < e; i++) {
 
-                await page.waitFor(200);
+            await page.waitFor(200);
 
-                const [day_calendar] = await page.$x(`//*[@class="vdp-datepicker__calendar"]/div/span[text()="${i}"]`);
-                await day_calendar.click();
+            const [day_calendar] = await page.$x(`//*[@class="vdp-datepicker__calendar"]/div/span[text()="${i}"]`);
+            await day_calendar.click();
 
-                try {
-                    await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
-                } catch (e) {
-                    await page.screenshot({path: 'screen_' + new Date().getTime() + '.png'});
-                }
-
-                const content = await page.content();
-
-                let day = i;
-                if (day < 10) day = '0' + day;
-                month = curDate.getMonth() + 1;
-                if (month < 10) month = '0' + month;
-
-                let name_file = `${day}.${month}.${year}`;
-
-                fs.writeFileSync(`parsed_files/${name_file}.html`, content);
-
-                socket.emit('parsing_result', {text: `Спарсили день №${i} из ${colDays}. Время: `, data: null});
-
-                const calendar = await page.$('.c-filter_datepicker');
-                await calendar.click();
+            try {
+                await page.waitForSelector('.c-games .c-games__col .c-games__col:nth-child(1)');
+            } catch (e) {
+                await page.screenshot({path: 'screen_' + new Date().getTime() + '.png'});
             }
 
-            let [next] = await page.$x('//*[@class="vdp-datepicker__calendar"][1]//*[@class="next"]');
-            next.click();
+            const content = await page.content();
 
+            let day = i;
+            if (day < 10) day = '0' + day;
+            month = curDate.getMonth() + 1;
+            if (month < 10) month = '0' + month;
+
+            let name_file = `${day}.${month}.${year}`;
+
+            fs.writeFileSync(`parsed_files/${name_file}.html`, content);
+
+            socket.emit('parsing_result', {text: `Спарсили день №${i} из ${e}. Время: `, data: null});
+
+            const calendar = await page.$('.c-filter_datepicker');
+            await calendar.click();
         }
         
         browser.close();

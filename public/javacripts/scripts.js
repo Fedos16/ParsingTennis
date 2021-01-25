@@ -85,7 +85,7 @@ $(document).ready(async function(){
 
         console.log(time);
 
-        (num > 0) ? time = `${num} мин. ${part * 60} сек.` : time = `${part * 60} сек.`;
+        (num > 0) ? time = `${num} мин. ${(part * 60).toFixed(0)} сек.` : time = `${(part * 60).toFixed(0)} сек.`;
 
         setStatus(data.text + ` ${time}`, 'green');
         //console.log(data);
@@ -168,10 +168,10 @@ $(document).ready(async function(){
             if (day_name) {
                 status_champ = false;
                 if (name_ch in champ) {
-                    if (champ[name_ch] >= 55) status_champ = true;
+                    if (champ[name_ch] >= 53.6) status_champ = true;
                 }
             } else {
-                if (percent_9x2 < 55) status_champ = false;
+                if (percent_9x2 < 53.6) status_champ = false;
             }
 
             let style_9x2 = '';
