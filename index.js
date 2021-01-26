@@ -35,6 +35,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(bodyParser.json({limit: '50mb'}));
+
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 app.use(
     '/javascripts',
     express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist'))

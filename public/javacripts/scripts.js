@@ -180,10 +180,10 @@ $(document).ready(async function(){
             if (day_name) {
                 status_champ = false;
                 if (name_ch in champ) {
-                    if (champ[name_ch] >= 53.6) status_champ = true;
+                    if (champ[name_ch] >= 53.3) status_champ = true;
                 }
             } else {
-                if (percent_9x2 < 53.6) status_champ = false;
+                if (percent_9x2 < 53.3) status_champ = false;
             }
 
             let style_9x2 = '';
