@@ -4,7 +4,7 @@ const cherio = require('cheerio');
 const config = require('../config');
 
 export let LAUNCH_PUPPETEER_OPTS = {
-    headless: false,
+    headless: true,
     args: [
         '--window-size=1920,1080',
         '--no-sandbox',
@@ -52,10 +52,17 @@ export async function BotIsRunning(page) {
     try {
 
         async function getLiga() {
-            let db = await models.Championats.find({ "A9x2.Percent": {$gte: 53.6} }, {Name: 1});
+            let db = await models.Championats.find({}, { Name: 1, 'A9x2.Percent': 1 });
             let arr_names = {};
             for (let row of db) {
-                arr_names[row.Name] = true;
+                let name = row.Name;
+                let percent = row.A9x2.Percent;
+                let rec_percent = 100 - percent;
+                if (percent >= 53.6) {
+                    arr_names[row.Name] = '18.5 М';
+                } else if (rec_percent >= 53.6) {
+                    arr_names[row.Name] = '18.5 Б';
+                }
             }
             return arr_names;
         }
@@ -85,6 +92,7 @@ export async function BotIsRunning(page) {
             let person = params.person;
             let name_championat = params.name;
             let new_score = params.new_score;
+            let bet_text = params.bet;
 
             let url = main_url + game_url;
 
@@ -106,7 +114,7 @@ export async function BotIsRunning(page) {
 
             await page.waitFor(500);
 
-            const [bet_element] = await page.$x(`//*[@class="bet_group"]//*[text()[contains(.,'18.5 М')]]/parent::div`);
+            const [bet_element] = await page.$x(`//*[@class="bet_group"]//*[text()[contains(.,'${bet_text}')]]/parent::div`);
 
             if (!bet_element) {
                 console.log(` - No Elements for Bet`);
@@ -115,6 +123,10 @@ export async function BotIsRunning(page) {
 
             let kef_element = await bet_element.$('.koeff i')
             let kef_value = await page.evaluate(el => el.textContent, kef_element);
+            if (kef_value < 1.83) {
+                console.log(` - Low Keff: ${kef_value}`);
+                return;
+            }
 
             // Получаем игрока 1 и игрока 2
             let person_arr = String(person).split(' — ');
@@ -131,6 +143,11 @@ export async function BotIsRunning(page) {
 
             await (await page.$('.coupon-btn-group__item button')).click();
 
+            console.log(` - BET and Save Bet: ${currentDateTime()}`);
+            //await page.screenshot({path: `Ставка сделана и сохранена ${currentDateTime()}.png`})
+
+            await page.waitFor(8000);
+
             await models.Bets.create({
                 Championat: name_championat,
                 Team: person,
@@ -139,13 +156,9 @@ export async function BotIsRunning(page) {
                 CurrentScore: new_score,
                 PartBet: part,
                 Kef: kef_value,
+                TypeBet: bet_text,
                 Status: 'В игре'
             });
-
-            console.log(` - BET and Save Bet: ${currentDateTime()}`);
-            //await page.screenshot({path: `Ставка сделана и сохранена ${currentDateTime()}.png`})
-
-            await page.waitFor(5000);
 
             return;
         }
@@ -244,13 +257,11 @@ export async function BotIsRunning(page) {
 
                 }
 
-                if (status_stavka) {
-                    (name in true_bet_champ) ? status_stavka = true : status_stavka = false;
-                }
-
                 // Необходимо делать ставку
-                if (status_stavka) {
-                    await Bet({num_parts, game_url, person, name, new_score});
+                if (status_stavka && name in true_bet_champ) {
+                    await Bet({num_parts, game_url, person, name, new_score, bet: true_bet_champ[name]});
+                } else {
+                    status_stavka = false;
                 }
 
                 //if (status_test) await Bet({num_parts, game_url, person});

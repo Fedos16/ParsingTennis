@@ -268,33 +268,28 @@ export async function ProcessingDB(socket) {
             let date = new Date(row.DateGame).toLocaleDateString('ru-RU');
 
             let func = get9x2(score);
-            let func_reverce = getReverce9x2(score);
-            let all_v_reverce = func_reverce.val_all;
-            let true_v_reverce = func_reverce.val_true;
 
             if (date in arrs) {
                 if (name in arrs[date]) {
                     arrs[date][name].nums += 1
                     arrs[date][name].all_v += func.val_all;
                     arrs[date][name].true_v += func.val_true;
-
-                    arrs[date][name].all_v_reverce += all_v_reverce;
-                    arrs[date][name].true_v_reverce += true_v_reverce;
                 } else {
-                    arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1, all_v_reverce, true_v_reverce};
+                    arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1};
                 }
             } else {
                 arrs[date] = {};
-                arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1, all_v_reverce, true_v_reverce};
+                arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1};
             }
 
-            if (index % 10 == 0) socket.emit('parsing_file_result', { text: `Обработано ${index} из ${games.length}` });
+            if (index % 10000 == 0) socket.emit('parsing_file_result', { text: `Обработано ${index} из ${games.length}`, data: arrs });
+            if (index % 10000 == 0) console.log(`Обработано: ${index} строк`);
 
             index ++;
             
         }
 
-        console.log(`База обработана за: ${new Date() - start} ms`);
+        console.log(`База обработана за: ${(new Date() - start) / 1000} s`);
 
         return {status: true, data: arrs}
     } catch(e) {

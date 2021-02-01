@@ -10,6 +10,7 @@ const schema = new Schema(
         CurrentScore: {type: Array},
         PartBet: {type: Number},
         Kef: {type: Number},
+        TypeBet: {type: String},
         Status: {type: String}
     },
     {

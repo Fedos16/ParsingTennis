@@ -181,8 +181,8 @@ $(document).ready(async function(){
             let all9x2 = array.all_v;
             let true9x2 = array.true_v;
 
-            let all9x2_reverce = array.all_v_reverce;
-            let true9x2_reverce = array.true_v_reverce;
+            let all9x2_reverce = array.all_v;
+            let true9x2_reverce = array.all_v - array.true_v;
 
             let percent_9x2 = 0;
             if (all9x2 > 0) percent_9x2 = (true9x2 / all9x2 * 100).toFixed(2);
@@ -191,10 +191,8 @@ $(document).ready(async function(){
             if (all9x2_reverce > 0) percent_9x2_reverce = (true9x2_reverce / all9x2_reverce * 100).toFixed(2);
 
             let champ = {};
-            let champ_reverce = {};
             if ('Championats' in ARRAY) {
                 champ = ARRAY.Championats.a9x2;
-                champ_reverce = ARRAY.Championats.a9x2_reverce;
             }
 
             let status_champ = true;
@@ -204,7 +202,7 @@ $(document).ready(async function(){
                 status_champ_reverce = false;
                 if (name_ch in champ) {
                     if (champ[name_ch] >= PERCENT_TRUE) status_champ = true;
-                    if (champ_reverce[name_ch] >= PERCENT_TRUE) status_champ_reverce = true;
+                    if (100 - champ_reverce[name_ch] >= PERCENT_TRUE) status_champ_reverce = true;
                 }
             } else {
                 if (percent_9x2 < PERCENT_TRUE) status_champ = false;
@@ -219,11 +217,7 @@ $(document).ready(async function(){
             }
 
             let style_9x2_reverce = '';
-            if (status_champ_reverce) {
-                all_all9x2_reverce += all9x2_reverce;
-                all_true9x2_reverce += true9x2_reverce;
-                style_9x2_reverce = 'color: rgb(103, 153, 3); font-weight: bold;';
-            }
+            if (status_champ_reverce) style_9x2_reverce = 'color: rgb(103, 153, 3); font-weight: bold;';
 
 
 
@@ -249,9 +243,6 @@ $(document).ready(async function(){
         let all_all9x2 = 0;
         let all_true9x2 = 0;
 
-        let all_all9x2_reverce = 0;
-        let all_true9x2_reverce = 0;
-
         let datas = await setArrayForRead();
 
         let true_champ = {};
@@ -260,8 +251,8 @@ $(document).ready(async function(){
             let func = getDataForDay(datas[name], name);
 
             if (!day_name) {
-                if (func.percent_9x2 >= PERCENT_TRUE || func.percent_9x2_reverce >= PERCENT_TRUE) {
-                    if (!(name in true_champ)) true_champ[name] = { a9x2: func.percent_9x2, a9x2_reverce: func.percent_9x2_reverce };
+                if (func.percent_9x2 >= PERCENT_TRUE) {
+                    if (!(name in true_champ)) true_champ[name] = { a9x2: func.percent_9x2};
                 }
             }
 
@@ -275,17 +266,19 @@ $(document).ready(async function(){
         }
 
         let percent_9x2 = 0
-        if (all_all9x2 > 0) percent_9x2 = (all_true9x2 / all_all9x2 * 100).toFixed(2);
+        let percent_9x2_reverce = 0;
+        if (all_all9x2 > 0) {
+            percent_9x2 = (all_true9x2 / all_all9x2 * 100).toFixed(2);
+            percent_9x2_reverce = ((all_all9x2 - all_true9x2) / all_all9x2 * 100).toFixed(2);
+        }
 
-        let percent_9x2_reverce = 0
-        if (all_all9x2_reverce > 0) percent_9x2_reverce = (all_true9x2_reverce / all_all9x2_reverce * 100).toFixed(2);
 
         $('table tbody').prepend(`<tr style="background-color: rgb(103, 153, 3);"><td>${0}</td><td>ВСЕ ТУРНИРЫ</td><td>${all_nums}</td>
             <td>
                 ${all_all9x2}(${all_true9x2}) - ${percent_9x2} %
             </td>
             <td>
-                ${all_all9x2_reverce}(${all_true9x2_reverce}) - ${percent_9x2_reverce} %
+                ${all_all9x2}(${all_all9x2 - all_true9x2}) - ${percent_9x2_reverce} %
             </td>
         </tr>`);
     }
