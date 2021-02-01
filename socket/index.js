@@ -21,7 +21,7 @@ export default function (server, dir_path) {
                 await TransferDataForClient(io, arr);
                 io.sockets.emit('bot_notification', {text: 'Данные получены ...', status_bot: status_job_bot});
             }
-            await page.waitFor(2000);
+            await page.waitFor(3000);
         }
     }
 
@@ -43,12 +43,12 @@ export default function (server, dir_path) {
             });
             socket.on('parsing_file', async (data) => {
                 console.log(' - Начинаем обработку файла ...');
-                let arr = await Processing_File();
-                //let arr = await ProcessingDB();
+                //let arr = await Processing_File(socket);
+                let arr = await ProcessingDB(socket);
                 socket.emit('parsing_file_result', {text: 'Файл обработан', data: arr});
             });
             socket.on('bot_start', async (data) => {
-                console.log(` - Запускаем Бота`);
+                console.log(` - Starting Bot`);
 
                 io.sockets.emit('bot_notification', {text: 'Запускаем ракету', status_bot: true});
 
@@ -76,13 +76,13 @@ export default function (server, dir_path) {
 
                 let status_autorization = false;
                 try {
-                    await page.waitForSelector('.top-b__account', {timeout: 10000});
+                    await page.waitForSelector('.top-b__account');
                     status_autorization = true;
                     socket.emit('bot_notification', {text: 'Капча не требуется'});
                 } catch (e) {
-                    console.log(' - Ресурс требует капчу');
-                    socket.emit('bot_notification', {text: 'Ресурс требует пройти капчу'});
-                    await page.screenshot({path: 'CAPTCHA.png'});
+                    console.log(' - Resuorce Captcha');
+                    await page.screenshot({path: './public/images/CAPTCHA.png'});
+                    socket.emit('bot_notification', {text: 'Ресурс требует пройти капчу', captcha: true});
                 }
 
                 if (!status_autorization) {
@@ -98,7 +98,21 @@ export default function (server, dir_path) {
 
                 io.sockets.emit('bot_notification', {text: 'Успешно авторизовались ...'});
 
-                console.log(' - Бот работает');
+                await page.waitFor(5000);
+
+                await page.waitForSelector('.langDropTop_con');
+                await (await page.$('.langDropTop_con')).click();
+
+                await page.waitFor(1000);
+
+                const [ru_lang] = await page.$x(`//*[@class="langDropTop_ul"]//*[text()[contains(.,'ru')]]/parent::a/parent::li`);
+                await page.waitFor(100);
+                await ru_lang.click();
+
+                console.log(' - Bot Jobbing');
+
+                status_bot = true;
+
                 await BotJob(page);
 
                 status_job_bot = false;
@@ -106,7 +120,7 @@ export default function (server, dir_path) {
                 browser.close();
                 io.sockets.emit('bot_stopped', {text: 'Бот завершил работу'});
 
-                console.log(' - Бот выключен');
+                console.log(' - Bot True');
             
             })
             socket.on('send_code', async (data) => {
@@ -117,6 +131,8 @@ export default function (server, dir_path) {
                 await (await page.$('.block-window__btn')).click();
 
                 await page.waitFor(5000);
+
+                status_bot = true;
 
                 await BotJob(page);
 
@@ -139,7 +155,7 @@ export default function (server, dir_path) {
 
         } catch (e) {
             console.log(e);
-            socket.emit('bot_notification', {text: 'Произошла ошибка!'});
+            io.sockets.emit('bot_notification', {text: 'Произошла ошибка!'});
         }
     });
 }

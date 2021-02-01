@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const models = require('.././models');
 
-export async function Processing_File () {
+export async function Processing_File (socket) {
     try {
 
         async function readFileName(name) {
@@ -51,7 +51,7 @@ export async function Processing_File () {
 
             if (!(name in arrs)) arrs[name] = {};
 
-            //let arr_db = [];
+            let arr_db = [];
 
             let blocks = $('.c-games.p-results__games > div > div.c-games__col');
             for (let i=0; i < blocks.length; i++) {
@@ -99,7 +99,7 @@ export async function Processing_File () {
 
                         let peps_arr = String(peps).split(' - ');
 
-                        /* arr_db.push({
+                        arr_db.push({
                             Championat: nameComp,
                             HomePerson: peps_arr[0],
                             GuestPerson: peps_arr[1],
@@ -108,7 +108,7 @@ export async function Processing_File () {
                                 More: arr_sc
                             },
                             DateGame: date
-                        }); */
+                        });
 
                     }
 
@@ -145,7 +145,7 @@ export async function Processing_File () {
                 
             }
 
-            //await models.Games.insertMany(arr_db);
+            await models.Games.insertMany(arr_db);
 
             return {arrs, arrs_championats};
         }
@@ -160,10 +160,13 @@ export async function Processing_File () {
         let arrs = {};
         let arrs_championats = {};
 
+        let index = 1;
         for (let name of files) {
             let func = await readFileName(name);
             arrs = func.arrs;
             arrs_championats = func.arrs_championats;
+            socket.emit('parsing_file_result', { text: `Обработано ${index} из ${files.length}` });
+            index ++;
         }
 
         let db_arr = [];
@@ -182,7 +185,7 @@ export async function Processing_File () {
         return {status: false, err: e}
     }
 }
-export async function ProcessingDB() {
+export async function ProcessingDB(socket) {
     try {
         function get9x2(score) {
             let val_all = 0;
@@ -214,38 +217,84 @@ export async function ProcessingDB() {
 
             return {val_all, val_true};
         }
+        function getReverce9x2(score) {
+            let val_all = 0;
+            let val_true = 0;
+            for (let i=1; i < score.length; i++) {
+                if (i+1 <= score.length-1) {
+                    let a = score[i-1];
+                    let b = score[i];
+                    let c = score[i+1];
+
+                    let a1 = Number(a[0]);
+                    let a2 = Number(a[1]);
+
+                    let b1 = Number(b[0]);
+                    let b2 = Number(b[1]);
+
+                    let c1 = Number(c[0]);
+                    let c2 = Number(c[1]);
+
+                    if (a1+a2 >= 20 && b1+b2 >= 20) {
+                        val_all ++;
+                        if (c1+c2 <= 18) {
+                            val_true ++;
+                        }
+                    }
+
+                }
+            }
+
+            return {val_all, val_true};
+        }
 
         let start = new Date();
+
+        socket.emit('parsing_file_result', { text: `Делаем запрос в базу данных ...` });
+
         let games = await models.Games.find({}, {Score: 1, Championat: 1, DateGame: 1});
 
-        console.log(`Игр получено из Базы: ${games.length} за ${new Date() - start}ms`);
+        console.log(`Игр получено из Базы: ${games.length} за ${new Date() - start} ms`);
+
+        socket.emit('parsing_file_result', { text: `Игр получено из Базы: ${games.length}` });
 
         let arrs = {}
 
         start = new Date();
+        let index = 1;
         for (let row of games) {
             let score = row.Score.More;
             let name = row.Championat;
             let date = new Date(row.DateGame).toLocaleDateString('ru-RU');
 
             let func = get9x2(score);
+            let func_reverce = getReverce9x2(score);
+            let all_v_reverce = func_reverce.val_all;
+            let true_v_reverce = func_reverce.val_true;
 
             if (date in arrs) {
                 if (name in arrs[date]) {
                     arrs[date][name].nums += 1
                     arrs[date][name].all_v += func.val_all;
                     arrs[date][name].true_v += func.val_true;
+
+                    arrs[date][name].all_v_reverce += all_v_reverce;
+                    arrs[date][name].true_v_reverce += true_v_reverce;
                 } else {
-                    arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1};
+                    arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1, all_v_reverce, true_v_reverce};
                 }
             } else {
                 arrs[date] = {};
-                arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1};
+                arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1, all_v_reverce, true_v_reverce};
             }
+
+            if (index % 10 == 0) socket.emit('parsing_file_result', { text: `Обработано ${index} из ${games.length}` });
+
+            index ++;
             
         }
 
-        console.log(`База обработана за: ${new Date() - start}ms`);
+        console.log(`База обработана за: ${new Date() - start} ms`);
 
         return {status: true, data: arrs}
     } catch(e) {

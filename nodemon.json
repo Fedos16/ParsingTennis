@@ -2,8 +2,12 @@
     "ignore": ["node_modules", "public"],
     "env": {
       "NODE_ENV": "development",
-      "PORT": 3000,
-      "MONGO_URL": "mongodb://localhost:27017/bot_db"
+      "PORT": 4000,
+      "MONGO_URL": "mongodb://localhost:27017/bot_db",
+      "PROXY_SERVER": null,
+      "PROXY_PORT": "30038",
+      "PROXY_LOGIN": "olegator072_gmail_co",
+      "PROXY_PASSWORD": "05ea895311"
     },
     "ext": ".js,.json",
     "watch": "./"

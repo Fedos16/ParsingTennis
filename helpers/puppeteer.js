@@ -1,9 +1,15 @@
 import puppeteer from 'puppeteer'
 const fs = require('fs');
+const config = require('../config');
 
-export const LAUNCH_PUPPETEER_OPTS = {
-    args: [
-        '--window-size=1920x1080'
+export let LAUNCH_PUPPETEER_OPTS = {
+    headless: true,
+    args: ['--window-size=1920,1080',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu'
     ]
 };
 
@@ -18,20 +24,22 @@ export async function getPageContent(url, socket) {
 
         let contents = [];
 
-        const browser = await puppeteer.launch({
-            headless: true,
-            args : [
-                '--window-size=1920,1080',
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
-            ]
-        });
+        if (config.PROXY_SERVER != 'null') {
+            LAUNCH_PUPPETEER_OPTS.args.push(`--proxy-server=http://${config.PROXY_SERVER}:${config.PROXY_PORT}`);
+        }
+
+        const browser = await puppeteer.launch(LAUNCH_PUPPETEER_OPTS);
         const page = await browser.newPage(PAGE_PUPPETEER_OPTS);
 
-        try {    
+        try {
+
+            if (config.PROXY_SERVER != 'null') {
+                await page.authenticate({
+                    username: config.PROXY_LOGIN,
+                    password: config.PROXY_PASSWORD,
+                });
+            }
+
             await page.setViewport({width: 1920, height: 1080});
             
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36');
@@ -53,7 +61,7 @@ export async function getPageContent(url, socket) {
             let now = new Date();
             let now_day = now.getDate();
 
-            let months = 0;
+            let months = 3;
             let start_date = new Date(now.getFullYear(), now.getMonth() - months, 1);
 
             // Открываем календарь
@@ -106,7 +114,7 @@ export async function getPageContent(url, socket) {
 
                 fs.writeFileSync(`parsed_files/${name_file}.html`, content);
 
-                socket.emit('parsing_result', {text: `Спарсили день №${i} из ${e}. Время: `, data: null});
+                socket.emit('parsing_result', {text: `Спарсили день №${i} из ${e-1}. Время: `, data: null});
 
                 const calendar = await page.$('.c-filter_datepicker');
                 await calendar.click();

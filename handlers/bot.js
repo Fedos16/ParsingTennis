@@ -1,10 +1,17 @@
 import puppeteer from 'puppeteer'
 const models = require('.././models');
 const cherio = require('cheerio');
+const config = require('../config');
 
-export const LAUNCH_PUPPETEER_OPTS = {
+export let LAUNCH_PUPPETEER_OPTS = {
+    headless: false,
     args: [
-        '--window-size=1920x1080'
+        '--window-size=1920,1080',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu'
     ]
 };
 
@@ -16,18 +23,21 @@ export const PAGE_PUPPETEER_OPTS = {
 
 export async function StartingBrowser() {
     try {
-        const browser = await puppeteer.launch({
-            headless: true,
-            args : [
-                '--window-size=1920,1080',
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
-            ]
-        });
+
+        if (config.PROXY_SERVER != 'null') {
+            LAUNCH_PUPPETEER_OPTS.args.push(`--proxy-server=http://${config.PROXY_SERVER}:${config.PROXY_PORT}`);
+        }
+
+        const browser = await puppeteer.launch(LAUNCH_PUPPETEER_OPTS);
         const page = await browser.newPage(PAGE_PUPPETEER_OPTS);
+
+        if (config.PROXY_SERVER != 'null') {
+            await page.authenticate({
+                username: config.PROXY_LOGIN,
+                password: config.PROXY_PASSWORD,
+            });
+        }
+
         await page.setViewport({width: 1920, height: 1080});
         
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36');
@@ -99,7 +109,7 @@ export async function BotIsRunning(page) {
             const [bet_element] = await page.$x(`//*[@class="bet_group"]//*[text()[contains(.,'18.5 М')]]/parent::div`);
 
             if (!bet_element) {
-                console.log(` - Не найден нужный элемент для ставки`);
+                console.log(` - No Elements for Bet`);
                 return;
             }
 
@@ -132,7 +142,7 @@ export async function BotIsRunning(page) {
                 Status: 'В игре'
             });
 
-            console.log(` - Ставка сделана и сохранена: ${currentDateTime()}`);
+            console.log(` - BET and Save Bet: ${currentDateTime()}`);
             //await page.screenshot({path: `Ставка сделана и сохранена ${currentDateTime()}.png`})
 
             await page.waitFor(5000);

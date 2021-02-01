@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Парсер</title>
     <link rel="stylesheet" href="/stylesheets/style.css">
 </head>
@@ -10,8 +11,8 @@
         <header>
             <div class="menu">
                 <ul>
-                    <a href="/bot"><li>Работа с Ботом</li></a>
-                    <li id="active_item_menu">Парсер статистики</li>
+                    <a href="/bot"><li>Бот</li></a>
+                    <li id="active_item_menu">Парсер</li>
                     <a href="/statistics"><li>Статистика</li></a>
                 </ul>
             </div>
@@ -30,13 +31,13 @@
                         <th>Название турнира</th>
                         <th>Количество матчей</th>
                         <th>Алгоритм 2x9</th>
+                        <th>Алгоритм 2x9 Обратный</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
-    <img src="/images/error_parsing.png" alt="">
     <script src="/javascripts/jquery.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/javacripts/scripts.js"></script>

@@ -16,17 +16,28 @@ header {
     margin-bottom: 30px;
     position: relative;
 }
+
+.menu {
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
 header ul {
     display: flex;
+    height: 100%;
+    align-items: flex-end;
 }
 
 header ul li {
     font-size: 18px;
     padding: 5px 10px;
     margin: 0px 10px;
+    min-width: 80px;
     color: rgb(54, 54, 54);
     cursor: default;
     border-bottom: 2px solid transparent;
+    padding-bottom: 10px;
+    text-align: center;
 }
 header ul li:not(#active_item_menu):hover {
     color: #2e76d4;
@@ -63,11 +74,9 @@ select {
     width: 100%;
 }
 .overflow_row {
-    width: auto;
     height: auto;
-    max-height: 600px;
+    max-height: 100%;
     overflow: auto;
-    padding: 5px;
     position: relative;
 }
 .row .column {
@@ -114,7 +123,8 @@ button:disabled {
 
 table {
     overflow: hidden;
-    width: 1000px;
+    width: auto;
+    max-width: 100%;
     border-collapse: collapse;
     border-spacing: 0px;
 }
