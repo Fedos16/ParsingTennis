@@ -229,3 +229,11 @@ table thead th {
     margin-right: 5px;
     text-align: center;
 }
+
+.liga_true {
+    background-color: #2586cd;
+    background-color: rgb(255, 255, 140);
+}
+.liga_netral {
+    background-color: rgb(240, 240, 240);
+}

@@ -2,12 +2,14 @@
     "ignore": ["node_modules", "public"],
     "env": {
       "NODE_ENV": "production",
-      "PORT": 4000,
+      "PORT": 5000,
       "MONGO_URL": "mongodb://localhost:27017/bot_db",
       "PROXY_SERVER": null,
       "PROXY_PORT": "30038",
       "PROXY_LOGIN": "olegator072_gmail_co",
-      "PROXY_PASSWORD": "05ea895311"
+      "PROXY_PASSWORD": "05ea895311",
+      "ACCESS_KEY_AWS": "AKIAJ7I4ZDKZ7LHIQAAA",
+      "SECRET_KEY_AWS": "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"
     },
     "ext": ".js,.json",
     "watch": "./"

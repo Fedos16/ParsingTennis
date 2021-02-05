@@ -1,8 +1,9 @@
 $(document).ready(async function(){
 
-    const PERCENT_TRUE = 53.6;
+    const PERCENT_TRUE = 53;
 
     let ARRAY = {};
+    const url = window.location.pathname;
 
     var socket = io.connect();
 
@@ -117,7 +118,6 @@ $(document).ready(async function(){
             } else {
                 $('#start_bot').removeAttr('disabled');
                 $('#stop_bot').attr('disabled', true);
-                $('table tbody').text('');
             }
         }
         if ('captcha' in data) {
@@ -136,7 +136,108 @@ $(document).ready(async function(){
     })
     .on('transfer_data_bot', async (data) => {
         let arr = data.data;
-        setRowsBotData(arr);
+        if (url == '/bot') setRowsBotData(arr);
+    })
+    .on('calc_statistics', async data => {
+        function addRowInTable(data) {
+
+            let per_plus = '<br>';
+            let per_minus = '';
+            let rub = '';
+            if (data.all > 0) {
+                per_plus = ' - ' + (data.plus / data.all * 100).toFixed(2) + '%';
+                per_minus = ' - ' + (data.minus / data.all * 100).toFixed(2) + '%';
+                rub = 'р.';
+            }
+
+            let style = '';
+            if (data.name == 'ИТОГО') style="background-color: rgb(255, 255, 140); font-weight: bold;"
+
+            $('table tbody').append(`<tr style="${style}">
+                <td style="text-align: left;">${data.name}</td>
+                <td>${data.type}</td>
+                <td><b>${data.all}</b></td>
+                <td><b>${data.plus}</b>${per_plus}</td>
+                <td><b>${data.minus}</b>${per_minus}</td>
+                <td><b>${Number(data.rev).toFixed(2)}${rub}</b></td>
+            </tr`);
+        }
+
+        $('.progress_bar').text(data.text);
+        console.log(data);
+        let bets = data.bets;
+        
+        let arr = {};
+
+        let sum_bet = 50;
+
+        for (let row of bets) {
+            let name = row.Championat;
+            let type = row.TypeBet;
+            let status = row.Status;
+            let kef = row.Kef;
+
+            let pl = 0;
+            let mn = 0;
+            (status == 'Выйгрыш') ? pl = 1 : mn = 1;
+
+            let rev = 0;
+            (status == 'Выйгрыш') ? rev = sum_bet * kef - sum_bet : rev = -sum_bet;
+            rev = Number(rev.toFixed(2));
+
+            if (name in arr) {
+                if (type in arr[name]) {
+                    arr[name][type].all += 1;
+                    arr[name][type].plus += pl;
+                    arr[name][type].minus += mn;
+                    arr[name][type].rev += rev;
+                } else {
+                    arr[name][type] = {
+                        all: 1, plus: pl, minus: mn, rev: rev
+                    }
+                }
+            } else {
+                arr[name] = {};
+                arr[name][type] = {
+                    all: 1, plus: pl, minus: mn, rev: rev
+                }
+            }
+        }
+
+        $('table tbody').html(`<tr style="background-color: rgb(240, 240, 240);">
+        <td>Название турнира</td><td>Алгоритм</td><td>Всего ставок</td><td>Выйгрыш и %</td><td>Пройгрыш и %</td><td>Прибыль</td></tr>`);
+
+        let all_tb = {all: 0, plus: 0, minus: 0, rev: 0};
+        let all_tm = {all: 0, plus: 0, minus: 0, rev: 0};
+        let all_all = {all: 0, plus: 0, minus: 0, rev: 0};
+
+        Object.keys(arr).map(name => {
+            Object.keys(arr[name]).map(type => {
+                let cur = arr[name][type];
+                addRowInTable({name, type, all: cur.all, plus: cur.plus, minus: cur.minus, rev: cur.rev});
+                if (type == '18.5 М') {
+                    all_tm.all += cur.all;
+                    all_tm.plus += cur.plus;
+                    all_tm.minus += cur.minus;
+                    all_tm.rev += cur.rev;
+                } else {
+                    all_tb.all += cur.all;
+                    all_tb.plus += cur.plus;
+                    all_tb.minus += cur.minus;
+                    all_tb.rev += cur.rev;
+                }
+                all_all.all += cur.all;
+                all_all.plus += cur.plus;
+                all_all.minus += cur.minus;
+                all_all.rev += cur.rev;
+            })
+        })
+
+        addRowInTable({name: '', type: '', all: '', plus: '', minus: '', rev: ''});
+        addRowInTable({name: 'Итого', type: '18.5 Б', all: all_tb.all, plus: all_tb.plus, minus: all_tb.minus, rev: all_tb.rev});
+        addRowInTable({name: 'Итого', type: '18.5 М', all: all_tm.all, plus: all_tm.plus, minus: all_tm.minus, rev: all_tm.rev});
+        addRowInTable({name: 'ИТОГО', type: 'Все', all: all_all.all, plus: all_all.plus, minus: all_all.minus, rev: all_all.rev});
+
     })
 
     function addDataInSelect(days) {
@@ -181,8 +282,8 @@ $(document).ready(async function(){
             let all9x2 = array.all_v;
             let true9x2 = array.true_v;
 
-            let all9x2_reverce = array.all_v;
-            let true9x2_reverce = array.all_v - array.true_v;
+            let all9x2_reverce = all9x2;
+            let true9x2_reverce = all9x2 - true9x2;
 
             let percent_9x2 = 0;
             if (all9x2 > 0) percent_9x2 = (true9x2 / all9x2 * 100).toFixed(2);
@@ -191,8 +292,10 @@ $(document).ready(async function(){
             if (all9x2_reverce > 0) percent_9x2_reverce = (true9x2_reverce / all9x2_reverce * 100).toFixed(2);
 
             let champ = {};
+            let champ_reverce = {};
             if ('Championats' in ARRAY) {
-                champ = ARRAY.Championats.a9x2;
+                champ = ARRAY.Championats;
+                champ_reverce = champ;
             }
 
             let status_champ = true;
@@ -202,7 +305,7 @@ $(document).ready(async function(){
                 status_champ_reverce = false;
                 if (name_ch in champ) {
                     if (champ[name_ch] >= PERCENT_TRUE) status_champ = true;
-                    if (100 - champ_reverce[name_ch] >= PERCENT_TRUE) status_champ_reverce = true;
+                    if (champ_reverce[name_ch] >= PERCENT_TRUE) status_champ_reverce = true;
                 }
             } else {
                 if (percent_9x2 < PERCENT_TRUE) status_champ = false;
@@ -217,7 +320,11 @@ $(document).ready(async function(){
             }
 
             let style_9x2_reverce = '';
-            if (status_champ_reverce) style_9x2_reverce = 'color: rgb(103, 153, 3); font-weight: bold;';
+            if (status_champ_reverce) {
+                all_all9x2_reverce += all9x2_reverce;
+                all_true9x2_reverce += true9x2_reverce;
+                style_9x2_reverce = 'color: rgb(103, 153, 3); font-weight: bold;';
+            }
 
 
 
@@ -243,6 +350,9 @@ $(document).ready(async function(){
         let all_all9x2 = 0;
         let all_true9x2 = 0;
 
+        let all_all9x2_reverce = 0;
+        let all_true9x2_reverce = 0;
+
         let datas = await setArrayForRead();
 
         let true_champ = {};
@@ -251,8 +361,8 @@ $(document).ready(async function(){
             let func = getDataForDay(datas[name], name);
 
             if (!day_name) {
-                if (func.percent_9x2 >= PERCENT_TRUE) {
-                    if (!(name in true_champ)) true_champ[name] = { a9x2: func.percent_9x2};
+                if (func.percent_9x2 >= PERCENT_TRUE || func.percent_9x2_reverce >= PERCENT_TRUE) {
+                    if (!(name in true_champ)) true_champ[name] = { a9x2: func.percent_9x2, a9x2_reverce: func.percent_9x2_reverce };
                 }
             }
 
@@ -266,19 +376,17 @@ $(document).ready(async function(){
         }
 
         let percent_9x2 = 0
-        let percent_9x2_reverce = 0;
-        if (all_all9x2 > 0) {
-            percent_9x2 = (all_true9x2 / all_all9x2 * 100).toFixed(2);
-            percent_9x2_reverce = ((all_all9x2 - all_true9x2) / all_all9x2 * 100).toFixed(2);
-        }
+        if (all_all9x2 > 0) percent_9x2 = (all_true9x2 / all_all9x2 * 100).toFixed(2);
 
+        let percent_9x2_reverce = 0
+        if (all_all9x2_reverce > 0) percent_9x2_reverce = (all_true9x2_reverce / all_all9x2_reverce * 100).toFixed(2);
 
         $('table tbody').prepend(`<tr style="background-color: rgb(103, 153, 3);"><td>${0}</td><td>ВСЕ ТУРНИРЫ</td><td>${all_nums}</td>
             <td>
                 ${all_all9x2}(${all_true9x2}) - ${percent_9x2} %
             </td>
             <td>
-                ${all_all9x2}(${all_all9x2 - all_true9x2}) - ${percent_9x2_reverce} %
+                ${all_all9x2_reverce}(${all_true9x2_reverce}) - ${percent_9x2_reverce} %
             </td>
         </tr>`);
     }
@@ -289,15 +397,20 @@ $(document).ready(async function(){
 
         Object.keys(arr).map(championat => {
             let arrs = arr[championat];
-            $('table tbody').append(`<tr style="background-color: rgb(240, 240, 240);"><td colspan="2">${championat}</td></tr>`)
 
             let code_nobet = '';
             let code_bet = '';
+
+            let status_liga = false;
+            let type_bet_liga = '';
 
             for (let row of arrs) {
                 let scores = row.score;
 
                 let status_bet = row.status_stavka;
+                status_liga = row.status_liga;
+
+                if (status_liga) type_bet_liga = ' - ' + row.type_bet_liga;
 
                 let l1 = '<div class="score_row">';
                 let l2 = '<div class="score_row">';
@@ -323,8 +436,17 @@ $(document).ready(async function(){
                 }
             }
 
+            let style_liga = 'background-color: rgb(240, 240, 240);';
+            if (status_liga) style_liga = 'background-color: #2586cd;';
+
+            $('table tbody').append(`<tr style="${style_liga}"><td colspan="2">${championat}${type_bet_liga}</td></tr>`)
+
             $('table tbody').append(`${code_bet}${code_nobet}`);
         })
+    }
+
+    if (url == '/statistics') {
+        socket.emit('get_statistics', { period: 'all' });
     }
 
 });

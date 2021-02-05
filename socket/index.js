@@ -1,6 +1,6 @@
 import {Parsing} from '../handlers/parsing'
 import {Processing_File, ProcessingDB} from '../handlers/processing_file';
-import {StartingBrowser, BotIsRunning, TransferDataForClient} from '../handlers/bot';
+import {StartingBrowser, BotIsRunning, TransferDataForClient, GetStatistics, GetStatisticsBk} from '../handlers/bot';
 
 const fs = require('fs');
 
@@ -14,14 +14,17 @@ export default function (server, dir_path) {
 
     async function BotJob(page) {
         status_job_bot = true;
+        let index = 0;
         while (status_bot) {
             io.sockets.emit('bot_notification', {text: 'Начинаем получать данные ...'});
+            //await GetStatisticsBk(page);
             let arr = await BotIsRunning(page);
             if (arr) {
                 await TransferDataForClient(io, arr);
                 io.sockets.emit('bot_notification', {text: 'Данные получены ...', status_bot: status_job_bot});
             }
-            await page.waitFor(3000);
+            await page.waitFor(1500);
+            index ++;
         }
     }
 
@@ -151,6 +154,11 @@ export default function (server, dir_path) {
                 let text = 'Бот работает ...';
                 if (!status_job_bot) text = 'Бот отдыхает ...'
                 io.sockets.emit('bot_notification', {text, status_bot: status_job_bot});
+            })
+            socket.on('get_statistics', async (data) => {
+                let bets = await GetStatistics() || [];
+
+                socket.emit('calc_statistics', {text: 'Статистика собрана', bets});
             })
 
         } catch (e) {

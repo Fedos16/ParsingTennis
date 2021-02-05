@@ -11,7 +11,8 @@ const schema = new Schema(
         PartBet: {type: Number},
         Kef: {type: Number},
         TypeBet: {type: String},
-        Status: {type: String}
+        Status: {type: String},
+        CheckBK: { type: Boolean, default: false }
     },
     {
         timestamps: true

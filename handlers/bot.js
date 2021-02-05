@@ -2,6 +2,12 @@ import puppeteer from 'puppeteer'
 const models = require('.././models');
 const cherio = require('cheerio');
 const config = require('../config');
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3({
+    accessKeyId: config.ACCESS_KEY_AWS,
+    secretAccessKey: config.SECRET_KEY_AWS
+});
+const busket_name = 'bets-screenshots';
 
 export let LAUNCH_PUPPETEER_OPTS = {
     headless: true,
@@ -58,10 +64,10 @@ export async function BotIsRunning(page) {
                 let name = row.Name;
                 let percent = row.A9x2.Percent;
                 let rec_percent = 100 - percent;
-                if (percent >= 53.6) {
-                    arr_names[row.Name] = '18.5 М';
+                if (percent >= 53) {
+                    arr_names[name] = '18.5 М';
                 } else if (rec_percent >= 53.6) {
-                    arr_names[row.Name] = '18.5 Б';
+                    arr_names[name] = '18.5 Б';
                 }
             }
             return arr_names;
@@ -85,7 +91,7 @@ export async function BotIsRunning(page) {
 
             let main_url = 'https://1xstavka.ru/';
 
-            let sum_bet = '20';
+            let sum_bet = '50';
 
             let game_url = params.game_url;
             let part = params.num_parts;
@@ -94,11 +100,21 @@ export async function BotIsRunning(page) {
             let new_score = params.new_score;
             let bet_text = params.bet;
 
+            if (bet_text == '18.5 Б') bet_text = '18.5 М';
+
             let url = main_url + game_url;
 
             let bets = await models.Bets.findOne({Team: person, PartBet: part});
 
             if (bets) return;
+
+            if (bet_text == '18.5 Б') {
+                bets = await models.Bets.findOne({Team: person, PartBet: part-1});
+                if (bets) {
+                    console.log(` - Bet on the previous`);
+                    return;
+                }
+            }
 
             await page.goto(url);
             
@@ -139,16 +155,23 @@ export async function BotIsRunning(page) {
 
             await page.waitFor(200)
 
+            let multiselect = await page.$('.coupon__bet-settings .multiselect.coupon-select:nth-child(1)');
+            await multiselect.click();
+            await page.waitFor(200)
+
+            const [variant] = await page.$x('//*[text()="Принять любое изменение"]/parent::span/parent::li');
+            await page.waitFor(100)
+            await variant.click();
+
             await (await page.$('.bet_sum_input')).type(sum_bet, {delay: 100});
 
             await (await page.$('.coupon-btn-group__item button')).click();
-
-            console.log(` - BET and Save Bet: ${currentDateTime()}`);
             //await page.screenshot({path: `Ставка сделана и сохранена ${currentDateTime()}.png`})
 
-            await page.waitFor(8000);
+            await page.waitFor(10000);
 
-            await models.Bets.create({
+            console.log(` - BET and Save Bet: ${currentDateTime()}`);
+            let id_bet = await models.Bets.create({
                 Championat: name_championat,
                 Team: person,
                 PlayerOne: person_one,
@@ -160,12 +183,74 @@ export async function BotIsRunning(page) {
                 Status: 'В игре'
             });
 
+            let screen = await page.screenshot();
+            let fileName = `${person}=${part}.png`; 
+
+            const params_basket = {
+                Bucket: busket_name,
+                Key: fileName,
+                Body: screen
+            };
+        
+            // Put it into an S3 bucket
+            await s3.putObject(params_basket).promise();
+
             return;
+        }
+        async function getCurrentBets() {
+            let bets = await models.Bets.find({Status: 'В игре'}, {TypeBet: 1, Team: 1, PartBet: 1});
+            let arr = {};
+
+            for (let row of bets) {
+                let team = row.Team;
+                let type = row.TypeBet;
+                let part = row.PartBet;
+                let _id = row._id;
+
+                arr[team] = {
+                    type, part, _id
+                }
+            }
+
+            return arr;
+
+        }
+        async function checkTrueBets(bets, params) {
+            let team = params.person;
+            let score = params.score.reverse();
+
+            if (team in bets) {
+                let part = bets[team].part - 1;
+                let type = bets[team].type;
+                let _id = bets[team]._id;
+
+                if (part >= score.length) return;
+                
+                let s_1 = Number(score[part][0]);
+                let s_2 = Number(score[part][1]);
+
+                let sum = s_1 + s_2;
+
+                let result = null;
+
+                if (type == '18.5 М') {
+                    result = 'Пройгрыш';
+                    if (sum <= 18) result = 'Выйгрыш';
+                } else if (type == '18.5 Б') {
+                    result = 'Пройгрыш';
+                    if (sum >= 19) result = 'Выйгрыш';
+                }
+
+                //console.log(` === ${result} -- ${team}`);
+
+                if (result) await models.Bets.findOneAndUpdate({_id}, { Status: result });
+            }
         }
 
         const table_tennis_url = 'https://1xstavka.ru/live/Table-Tennis/';
 
         const true_bet_champ = await getLiga();
+        const true_bets = await getCurrentBets();
 
         let current_url = page.url();
         if (current_url != table_tennis_url) {
@@ -257,6 +342,8 @@ export async function BotIsRunning(page) {
 
                 }
 
+                await checkTrueBets(true_bets, { score: arr_score, person });
+
                 // Необходимо делать ставку
                 if (status_stavka && name in true_bet_champ) {
                     await Bet({num_parts, game_url, person, name, new_score, bet: true_bet_champ[name]});
@@ -264,9 +351,17 @@ export async function BotIsRunning(page) {
                     status_stavka = false;
                 }
 
-                //if (status_test) await Bet({num_parts, game_url, person});
+                //if (status_test) await Bet({num_parts, game_url, person, name, new_score, bet: '18.5 М'});
 
-                (name in arr) ? arr[name].push({person, game_url, score: new_score, status_stavka}) : arr[name] = [{person, game_url, score: new_score, status_stavka}];
+                let status_liga = false;
+                let type_bet_liga = '';
+                if (name in true_bet_champ) {
+                    status_liga = true;
+                    type_bet_liga = true_bet_champ[name];
+                }
+
+                (name in arr) ? arr[name].push({person, game_url, score: new_score, status_stavka, status_liga, type_bet_liga}) : 
+                arr[name] = [{person, game_url, score: new_score, status_stavka, status_liga, type_bet_liga}];
             }
         }
 
@@ -274,7 +369,7 @@ export async function BotIsRunning(page) {
 
         return arr;
     } catch (e) {
-        await page.screenshot({path: `screen_err_${new Date().getTime()}.png`});
+        //await page.screenshot({path: `screen_err_${new Date().getTime()}.png`});
         console.log(e);
         return {};
     }
@@ -282,4 +377,76 @@ export async function BotIsRunning(page) {
 export async function TransferDataForClient(io, arr) {
     io.sockets.emit('transfer_data_bot', {data: arr});
     return true;
+}
+export async function GetStatistics() {
+
+    let bets = await models.Bets.find({Status: {$ne: 'В игре'}}, { Championat: 1, Status: 1, Kef: 1, TypeBet: 1 });
+
+    return bets;
+}
+export async function GetStatisticsBk(page) {
+
+    async function getBetsInDb() {
+        let bets = await models.Bets.find({ CheckBK: false }, { Team: 1, PartBet: 1, createdAt: 1 });
+        let arr = {};
+        let min_date;
+        for (let row of bets) {
+            let date = new Date(row.createdAt);
+            let name = row.Team;
+            let part = row.PartBet;
+            let _id = row._id;
+
+            if (!min_date) min_date = new Date(date);
+            if (min_date && min_date.getTime() > date.getTime()) min_date = new Date(date);
+
+            if (name in arr) {
+                arr[name].push( { part, _id, date } );
+            } else {
+                arr[name] = [ { part, _id, date } ]
+            }
+        }
+
+        return {arr, min_date};
+    }
+
+    const lk_hover = await page.$('.wrap_lk');
+    await lk_hover.hover();
+    await page.waitFor(100);
+
+    const [history_bets] = await page.$x('//*[text()="История пари"]/parent::li');
+    await history_bets.click();
+
+    await page.waitForSelector('.apm-filters__wrap .apm-filters__date:nth-child(1) .vdp-datepicker');
+
+    let bets_db = await getBetsInDb();
+    let arr_bets_db = bets_db.arr;
+    let min_date = bets_db.min_date;
+
+    let cur_date = new Date();
+    cur_date.setDate(cur_date.getDate() - 2);
+
+    let day = cur_date.getDate();
+
+    let month = cur_date.getMonth();
+    let cur_month = new Date().getMonth();
+
+    let status_other_month = false;
+    if (cur_month != month) status_other_month = true;
+
+    let calendar =  await page.$('.apm-filters__wrap .apm-filters__date:nth-child(1) .vdp-datepicker');
+    await calendar.click();
+    await page.waitFor(200);
+
+    if (status_other_month) {
+        const [prev] = await page.$x('(//*[@class="vdp-datepicker__calendar"]//*[@class="prev"])[1]');
+        await prev.click()
+    }
+
+    const [day_click] = await page.$x(`(//*[@class="vdp-datepicker__calendar"]//*[text()="${day}"])[1]`);
+    await day_click.click();
+
+    await page.waitForSelector('.apm-panel:nth-child(1)');
+
+    
+
 }

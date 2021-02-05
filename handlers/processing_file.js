@@ -217,36 +217,6 @@ export async function ProcessingDB(socket) {
 
             return {val_all, val_true};
         }
-        function getReverce9x2(score) {
-            let val_all = 0;
-            let val_true = 0;
-            for (let i=1; i < score.length; i++) {
-                if (i+1 <= score.length-1) {
-                    let a = score[i-1];
-                    let b = score[i];
-                    let c = score[i+1];
-
-                    let a1 = Number(a[0]);
-                    let a2 = Number(a[1]);
-
-                    let b1 = Number(b[0]);
-                    let b2 = Number(b[1]);
-
-                    let c1 = Number(c[0]);
-                    let c2 = Number(c[1]);
-
-                    if (a1+a2 >= 20 && b1+b2 >= 20) {
-                        val_all ++;
-                        if (c1+c2 <= 18) {
-                            val_true ++;
-                        }
-                    }
-
-                }
-            }
-
-            return {val_all, val_true};
-        }
 
         let start = new Date();
 
@@ -282,7 +252,7 @@ export async function ProcessingDB(socket) {
                 arrs[date][name] = {all_v: func.val_all, true_v: func.val_true, nums: 1};
             }
 
-            if (index % 10000 == 0) socket.emit('parsing_file_result', { text: `Обработано ${index} из ${games.length}`, data: arrs });
+            if (index % 10000 == 0) socket.emit('parsing_file_result', { text: `Обработано ${index} из ${games.length}` });
             if (index % 10000 == 0) console.log(`Обработано: ${index} строк`);
 
             index ++;
